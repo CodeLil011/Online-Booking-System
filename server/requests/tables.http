@@ -1,0 +1,70 @@
+### 1. Get all tables
+GET http://localhost:5000/api/tables
+
+### 2. Create a valid table (Table 13)
+POST http://localhost:5000/api/tables
+Content-Type: application/json
+
+{
+  "tableNumber": 13,
+  "capacity": 4,
+  "location": "Garden Area"
+}
+
+### 3. Create a duplicate table number (should fail: 409)
+POST http://localhost:5000/api/tables
+Content-Type: application/json
+
+{
+  "tableNumber": 5,
+  "capacity": 4,
+  "location": "Main Hall"
+}
+
+### 4. Create with invalid data (should fail: 400)
+POST http://localhost:5000/api/tables
+Content-Type: application/json
+
+{
+  "tableNumber": 0,
+  "capacity": 50,
+  "location": ""
+}
+
+### 5. Mark Table 11 as available again
+PUT http://localhost:5000/api/tables/t11
+Content-Type: application/json
+
+{
+  "status": "available"
+}
+
+### 6. Update with an invalid status (should fail: 400)
+PUT http://localhost:5000/api/tables/t5
+Content-Type: application/json
+
+{
+  "status": "broken"
+}
+
+### 7. Change Table 6's number to 5 (should fail: 409, number taken)
+PUT http://localhost:5000/api/tables/t6
+Content-Type: application/json
+
+{
+  "tableNumber": 5
+}
+
+### 8. Update a table that does not exist (should fail: 404)
+PUT http://localhost:5000/api/tables/t99
+Content-Type: application/json
+
+{
+  "capacity": 4
+}
+
+### 9. Send broken JSON (should fail: 400, handled by error middleware)
+POST http://localhost:5000/api/tables
+Content-Type: application/json
+
+{ "tableNumber": 14, "capacity": }

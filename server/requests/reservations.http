@@ -1,0 +1,136 @@
+### 1. Get all reservations (expect count 5)
+GET http://localhost:5000/api/reservations
+
+### 2. Filter by date (expect count 3)
+GET http://localhost:5000/api/reservations?date=2026-10-10
+
+### 3. Available tables for 4 guests on Oct 10, 7 PM (expect count 6)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-10&time=19:00&guests=4
+
+### 4. Book Table 6 on Oct 10, 7 PM (expect 201: the cancelled booking does NOT block it)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Bea Villanueva",
+  "customerEmail": "bea.villanueva@gmail.com",
+  "customerPhone": "09271234567",
+  "table": "t6",
+  "date": "2026-10-10",
+  "time": "19:00",
+  "guests": 4,
+  "specialRequest": "Anniversary dinner"
+}
+
+### 5. CONFLICT: Table 5 on Oct 10, 7 PM is already Confirmed (expect 409)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Miguel Torres",
+  "customerEmail": "miguel.torres@gmail.com",
+  "customerPhone": "09351234567",
+  "table": "t5",
+  "date": "2026-10-10",
+  "time": "19:00",
+  "guests": 4
+}
+
+### 6. CONFLICT: Table 6 again, now taken by request #4 (expect 409)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Miguel Torres",
+  "customerEmail": "miguel.torres@gmail.com",
+  "customerPhone": "09351234567",
+  "table": "t6",
+  "date": "2026-10-10",
+  "time": "19:00",
+  "guests": 4
+}
+
+### 7. Same table, DIFFERENT time slot (expect 201: no conflict)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Miguel Torres",
+  "customerEmail": "miguel.torres@gmail.com",
+  "customerPhone": "09351234567",
+  "table": "t5",
+  "date": "2026-10-10",
+  "time": "17:00",
+  "guests": 4
+}
+
+### 8. Too many guests for a 2-seater (expect 400)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Liza Ramos",
+  "customerEmail": "liza.ramos@gmail.com",
+  "customerPhone": "09061234567",
+  "table": "t2",
+  "date": "2026-10-15",
+  "time": "13:00",
+  "guests": 4
+}
+
+### 9. Out-of-service table, Table 11 (expect 400)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Liza Ramos",
+  "customerEmail": "liza.ramos@gmail.com",
+  "customerPhone": "09061234567",
+  "table": "t11",
+  "date": "2026-10-15",
+  "time": "13:00",
+  "guests": 4
+}
+
+### 10. Past date (expect 400)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "Liza Ramos",
+  "customerEmail": "liza.ramos@gmail.com",
+  "customerPhone": "09061234567",
+  "table": "t7",
+  "date": "2026-10-01",
+  "time": "13:00",
+  "guests": 4
+}
+
+### 11. Many invalid fields (expect 400 with 5 errors)
+POST http://localhost:5000/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "",
+  "customerEmail": "maria@",
+  "customerPhone": "12345",
+  "table": "t5",
+  "date": "2026-10-10",
+  "time": "18:30",
+  "guests": 0
+}
+
+### 12. Availability again (expect count 5: Table 6 is now taken)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-10&time=19:00&guests=4
+
+### 13. Availability with missing guests (expect 400)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-10&time=19:00
+
+### 14. One reservation with full table details (expect 200)
+GET http://localhost:5000/api/reservations/r1
+
+### 15. Reservation that does not exist (expect 404)
+GET http://localhost:5000/api/reservations/r999
+
+### 16. All reservations again (expect count 7: 5 original + #4 + #7)
+GET http://localhost:5000/api/reservations

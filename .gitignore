@@ -1,0 +1,13 @@
+# Dependencies (recreate with: npm install)
+node_modules/
+
+# Secrets - NEVER push these (share privately instead)
+.env
+
+# Build output
+dist/
+
+# Logs / OS / editor files
+*.log
+.DS_Store
+Thumbs.db

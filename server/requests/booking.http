@@ -1,0 +1,189 @@
+### ===== RUN 1, 2, 3 FIRST (restart the backend before testing) =====
+
+### 1. Login as CUSTOMER Maria
+# @name mariaLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Customer@123"
+}
+
+### 2. Login as STAFF Marco
+# @name staffLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "marco.delosreyes@gmail.com",
+  "password": "Staff@123"
+}
+
+### 3. Register a second customer, Liza (logged in automatically)
+# @name lizaRegister
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Liza Ramos",
+  "email": "liza.ramos@gmail.com",
+  "phone": "09061234567",
+  "password": "Liza2026pass"
+}
+
+@mariaToken = {{mariaLogin.response.body.token}}
+@staffToken = {{staffLogin.response.body.token}}
+@lizaToken = {{lizaRegister.response.body.token}}
+
+
+### ===== SLOT AVAILABILITY (public, for the time buttons) =====
+
+### 4. Slots for Oct 10, 4 guests (expect 5 slots; 19:00 has 6 tables left, others 7)
+GET http://localhost:5000/api/reservations/slots?date=2026-10-10&guests=4
+
+### 5. Too many guests (expect 400)
+GET http://localhost:5000/api/reservations/slots?date=2026-10-10&guests=11
+
+### 6. Past date (expect 400)
+GET http://localhost:5000/api/reservations/slots?date=2026-10-01&guests=2
+
+
+### ===== BOOKING WITH AUTO-ASSIGNED TABLE =====
+
+### 7. Maria books Oct 15, 7 PM, 4 guests, and TRIES to pick Table 12
+###    (expect 201: Table 12 is IGNORED, she gets Table 5, the smallest that fits)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{mariaToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Maria Santos",
+  "customerEmail": "maria.santos@gmail.com",
+  "customerPhone": "09171234567",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 4,
+  "table": "t12",
+  "specialRequest": "Window seat if possible"
+}
+
+### 8. Maria books the SAME slot again (expect 409: one booking per slot)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{mariaToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Maria Santos",
+  "customerEmail": "maria.santos@gmail.com",
+  "customerPhone": "09171234567",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 2
+}
+
+### 9. Liza books the same slot (expect 201: she gets Table 6, the next free one)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{lizaToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Liza Ramos",
+  "customerEmail": "liza.ramos@gmail.com",
+  "customerPhone": "09061234567",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 4
+}
+
+### 10. STAFF phone booking, 10 guests, no table chosen (expect 201: Table 12, customer null)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Ernesto Lim",
+  "customerEmail": "ernesto.lim@gmail.com",
+  "customerPhone": "09271112222",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 10,
+  "specialRequest": "Company dinner"
+}
+
+### 11. Slots for Oct 15, 10 guests (expect 19:00 → available false, "Fully booked")
+GET http://localhost:5000/api/reservations/slots?date=2026-10-15&guests=10
+
+### 12. Another 10-guest booking at 19:00 (expect 409: no tables available)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Grace Tan",
+  "customerEmail": "grace.tan@gmail.com",
+  "customerPhone": "09281113333",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 10
+}
+
+### 13. STAFF chooses a specific table that is taken: Table 5 at 19:00 (expect 409)
+POST http://localhost:5000/api/reservations
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "customerName": "Grace Tan",
+  "customerEmail": "grace.tan@gmail.com",
+  "customerPhone": "09281113333",
+  "date": "2026-10-15",
+  "time": "19:00",
+  "guests": 4,
+  "table": "t5"
+}
+
+
+### ===== MY RESERVATIONS + OWNERSHIP =====
+
+### 14. Maria's reservations (expect count 3: r1, r7, and the new one from #7)
+GET http://localhost:5000/api/reservations/my
+Authorization: Bearer {{mariaToken}}
+
+### 15. Liza's reservations (expect count 1)
+GET http://localhost:5000/api/reservations/my
+Authorization: Bearer {{lizaToken}}
+
+### 16. Staff tries /my (expect 403: customers only)
+GET http://localhost:5000/api/reservations/my
+Authorization: Bearer {{staffToken}}
+
+### 17. Liza tries to VIEW Maria's reservation r1 (expect 403)
+GET http://localhost:5000/api/reservations/r1
+Authorization: Bearer {{lizaToken}}
+
+### 18. Liza tries to CANCEL Maria's reservation r1 (expect 403)
+PATCH http://localhost:5000/api/reservations/r1/cancel
+Authorization: Bearer {{lizaToken}}
+Content-Type: application/json
+
+{
+  "reason": "Not mine"
+}
+
+### 19. Maria views her own r1 (expect 200)
+GET http://localhost:5000/api/reservations/r1
+Authorization: Bearer {{mariaToken}}
+
+### 20. Maria cancels her own r1 (expect 200, cancelledBy "customer")
+PATCH http://localhost:5000/api/reservations/r1/cancel
+Authorization: Bearer {{mariaToken}}
+Content-Type: application/json
+
+{
+  "reason": "Change of plans"
+}
+
+### 21. Staff can view ANY reservation (expect 200, status "Cancelled")
+GET http://localhost:5000/api/reservations/r1
+Authorization: Bearer {{staffToken}}

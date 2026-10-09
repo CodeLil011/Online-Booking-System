@@ -1,0 +1,102 @@
+### 1. Change ONLY the special request of r1 (expect 200: no conflict with itself)
+PUT http://localhost:5000/api/reservations/r1
+Content-Type: application/json
+
+{
+  "specialRequest": "Birthday celebration - please prepare a cake plate"
+}
+
+### 2. Move r1 from 19:00 to 17:00 (expect 200)
+PUT http://localhost:5000/api/reservations/r1
+Content-Type: application/json
+
+{
+  "time": "17:00"
+}
+
+### 3. Table 5 is now free at 19:00 (expect count 7, Table 5 included)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-10&time=19:00&guests=4
+
+### 4. Move r2 to Table 5 at 17:00 (expect 409: r1 is now there)
+PUT http://localhost:5000/api/reservations/r2
+Content-Type: application/json
+
+{
+  "table": "t5",
+  "time": "17:00"
+}
+
+### 5. r2 becomes 4 guests but keeps 2-seat Table 1 (expect 400: too small)
+PUT http://localhost:5000/api/reservations/r2
+Content-Type: application/json
+
+{
+  "guests": 4
+}
+
+### 6. r2 becomes 4 guests AND moves to 4-seat Table 7 (expect 200)
+PUT http://localhost:5000/api/reservations/r2
+Content-Type: application/json
+
+{
+  "guests": 4,
+  "table": "t7"
+}
+
+### 7. Try to change status through edit (expect 400: use /status)
+PUT http://localhost:5000/api/reservations/r2
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### 8. Edit a Completed reservation: r5 (expect 400)
+PUT http://localhost:5000/api/reservations/r5
+Content-Type: application/json
+
+{
+  "guests": 3
+}
+
+### 9. Edit a reservation that already started: r6 (expect 400)
+PUT http://localhost:5000/api/reservations/r6
+Content-Type: application/json
+
+{
+  "specialRequest": "Extra rice"
+}
+
+### 10. Move r3 to a past date (expect 400)
+PUT http://localhost:5000/api/reservations/r3
+Content-Type: application/json
+
+{
+  "date": "2026-10-01"
+}
+
+### 11. Invalid phone and time (expect 400 with 2 errors)
+PUT http://localhost:5000/api/reservations/r3
+Content-Type: application/json
+
+{
+  "customerPhone": "12345",
+  "time": "18:30"
+}
+
+### 12. Empty body (expect 400: no changes)
+PUT http://localhost:5000/api/reservations/r3
+Content-Type: application/json
+
+{}
+
+### 13. Reservation that does not exist (expect 404)
+PUT http://localhost:5000/api/reservations/r999
+Content-Type: application/json
+
+{
+  "guests": 2
+}
+
+### 14. View r2 after the edit (expect Table 7, 4 guests, updatedAt present)
+GET http://localhost:5000/api/reservations/r2

@@ -1,0 +1,951 @@
+/* index.css
+   Layout + basic theme from the draft (black background, brown navbar).
+   All colors are variables in :root, so they can be changed in ONE place.
+   Fonts, images, and visual polish come in Phase 10. */
+
+:root {
+  --color-bg: #000000; /* page background */
+  --color-surface: #161616; /* sidebar, cards */
+  --color-input: #4a4a4a; /* form input boxes */
+  --color-border: #333333;
+  --color-brown: #6f4518; /* navbar, highlights */
+  --color-text: #ffffff;
+  --color-muted: #b3b3b3; /* secondary text */
+  --navbar-height: 64px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+a {
+  color: inherit;
+}
+
+/* ---------- Navbar (top) ---------- */
+
+.navbar {
+  position: sticky; /* stays at the top while scrolling */
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between; /* logo left, links middle, icon right */
+  gap: 12px;
+  min-height: var(--navbar-height);
+  padding: 8px 24px;
+  background-color: var(--color-brown);
+  border-radius: 0 0 16px 16px;
+}
+
+.navbar-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.navbar-brand-main {
+  font-size: 1.4rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.navbar-brand-sub {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.navbar-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.navbar-links a {
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.navbar-links a:hover {
+  text-decoration: underline;
+}
+
+.navbar-profile {
+  display: flex;
+}
+
+/* ---------- Public pages ---------- */
+
+.public-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.public-content {
+  flex: 1; /* pushes the footer to the bottom */
+}
+
+/* Normal pages (Login, Register, My Reservations, Profile) */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* Sections of the scrolling home page */
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  scroll-margin-top: var(--navbar-height); /* so the sticky navbar doesn't cover titles */
+}
+
+/* Dashed boxes that mark where content will go later */
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 16px;
+  border: 2px dashed #555555;
+  border-radius: 12px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.placeholder-hero {
+  min-height: 400px;
+}
+
+/* Book Now: photo left, form right (stacks on small screens) */
+.booking-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.booking-layout > * {
+  flex: 1 1 300px;
+}
+
+.not-found {
+  text-align: center;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  padding: 24px 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.footer p {
+  margin: 4px 0;
+}
+
+/* ---------- Dashboard (left sidebar) ---------- */
+
+.dashboard-layout {
+  display: flex; /* sidebar and content side by side */
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.sidebar-brand {
+  font-size: 1.3rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-decoration: none;
+}
+
+.sidebar-brand span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: normal;
+  letter-spacing: 0;
+  color: var(--color-muted);
+}
+
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-links a {
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.sidebar-links a:hover {
+  background-color: #2a2a2a;
+}
+
+.sidebar-links a.active {
+  background-color: var(--color-brown);
+  font-weight: bold;
+}
+
+.sidebar-back {
+  margin-top: auto; /* pushes this link to the bottom */
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.dashboard-content {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 24px;
+}
+
+/* ---------- Small screens (phones) ---------- */
+
+@media (max-width: 700px) {
+  .navbar {
+    padding: 8px 16px;
+  }
+
+  .navbar-links {
+    order: 3; /* links move to their own row under the logo and icon */
+    width: 100%;
+    gap: 14px;
+    font-size: 0.85rem;
+  }
+
+  .dashboard-layout {
+    flex-direction: column; /* sidebar moves to the top */
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar-links {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sidebar-back {
+    margin-top: 0;
+  }
+}
+
+/* ---------- Dashboard lists, badges, buttons, messages (Step 10) ---------- */
+
+.muted {
+  color: var(--color-muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.toolbar select {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+}
+
+.table-wrapper {
+  overflow-x: auto; /* scroll sideways on small screens instead of breaking the layout */
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table th {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: normal;
+  text-transform: uppercase;
+}
+
+/* Colored status labels */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.badge-available {
+  background-color: #1f5130;
+  color: #9be7b0;
+}
+
+.badge-unavailable {
+  background-color: #5a1d1d;
+  color: #f2a5a5;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--color-brown);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.btn:hover {
+  filter: brightness(1.2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--color-muted);
+}
+
+/* Messages */
+.alert {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.alert-error {
+  background-color: #5a1d1d;
+  color: #ffd6d6;
+}
+
+.alert-success {
+  background-color: #1f5130;
+  color: #d6ffe0;
+}
+
+/* ---------- Forms: Login / Register (Step 13) ---------- */
+
+.auth-card {
+  max-width: 420px;
+  margin: 32px auto;
+  padding: 32px 24px;
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.auth-card h1 {
+  margin-top: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.form-group input {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.form-group input::placeholder {
+  color: #c8c8c8;
+}
+
+.form-group input:focus {
+  outline: 2px solid var(--color-brown);
+}
+
+.btn-block {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.form-footer {
+  margin-top: 16px;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+/* ---------- Profile dropdown (navbar) ---------- */
+
+.profile-menu {
+  position: relative; /* the dropdown is positioned relative to this */
+}
+
+.navbar-profile {
+  display: flex;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background-color: var(--color-surface);
+}
+
+.profile-dropdown a,
+.profile-dropdown button {
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-dropdown a:hover,
+.profile-dropdown button:hover {
+  background-color: #2a2a2a;
+}
+
+.profile-name {
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: bold;
+}
+
+.profile-name span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--color-muted);
+  text-transform: capitalize;
+}
+
+/* ---------- Sidebar: user info + logout ---------- */
+
+.sidebar-bottom {
+  margin-top: auto; /* pushes this group to the bottom of the sidebar */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-user {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  text-transform: capitalize;
+}
+
+.sidebar-user strong {
+  display: block;
+  color: var(--color-text);
+  text-transform: none;
+}
+
+.sidebar-logout {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .sidebar-bottom {
+    margin-top: 0;
+  }
+}
+
+/* ---------- Password field with eye button ---------- */
+
+.password-input {
+  position: relative; /* the eye button is placed inside the field */
+  display: flex;
+}
+
+.password-input input {
+  flex: 1;
+  padding-right: 44px; /* room for the eye button so text doesn't go under it */
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%); /* centers the button vertically */
+  display: flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--color-text);
+}
+
+
+/* ---------- My Profile page (Step 14) ---------- */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 2 columns, 1 on phones */
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.card {
+  padding: 24px;
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.info-list {
+  margin-bottom: 20px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+
+.info-row strong {
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+
+/* ---------- Manage Users (Step 17) ---------- */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar input {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-danger {
+  background-color: #8b2323;
+}
+
+/* Role and status badges */
+.badge-admin {
+  background-color: #6f4518;
+  color: #ffe2c2;
+}
+
+.badge-staff {
+  background-color: #1f3f5a;
+  color: #b9dcff;
+}
+
+.badge-customer {
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.badge-active {
+  background-color: #1f5130;
+  color: #9be7b0;
+}
+
+.badge-inactive {
+  background-color: #5a1d1d;
+  color: #f2a5a5;
+}
+
+/* Select boxes and hints inside forms */
+.form-group select {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.form-group select:disabled {
+  opacity: 0.6;
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ---------- Pop-up (Modal) ---------- */
+
+.modal-overlay {
+  position: fixed; /* covers the whole screen */
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.7); /* dark see-through background */
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto; /* scroll inside the box if it's taller than the screen */
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.modal-close {
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--color-text);
+}
+
+
+/* ---------- Booking form (Step 19) ---------- */
+
+/* Two fields side by side (Email | Phone, Date | Guests); stacked on phones */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 500px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled {
+  opacity: 0.6;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+  font: inherit;
+  resize: vertical;
+}
+
+/* Calendar icon visible on the dark date field */
+.form-group input[type="date"] {
+  color-scheme: dark;
+}
+
+.char-count {
+  align-self: flex-end;
+}
+
+/* Time slot buttons */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.slot-btn small {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.slot-btn:hover:not(:disabled) {
+  border-color: var(--color-brown);
+}
+
+.slot-btn.selected {
+  border-color: #c08a4a;
+  background-color: var(--color-brown);
+  font-weight: bold;
+}
+
+.slot-btn.selected small {
+  color: var(--color-text);
+}
+
+.slot-btn:disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+/* Box shown instead of the Submit button (logged out / staff) */
+.login-prompt {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  text-align: center;
+}
+
+.login-prompt p {
+  margin-top: 0;
+}
+
+.login-prompt .actions {
+  justify-content: center;
+}
+
+/* Success screen after booking */
+.booking-success {
+  padding: 24px;
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.booking-success h3 {
+  margin-top: 0;
+}
+
+/* Reservation status badges (also used in Step 20) */
+.badge-pending {
+  background-color: #5c4a12;
+  color: #ffe08a;
+}
+
+.badge-confirmed {
+  background-color: #1f5130;
+  color: #9be7b0;
+}
+
+.badge-cancelled {
+  background-color: #5a1d1d;
+  color: #f2a5a5;
+}
+
+.badge-completed {
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+/* ---------- Manage Reservations (Step 21) ---------- */
+
+/* Small grey second line inside a table cell (phone, email, time...) */
+.cell-sub {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.data-table td {
+  vertical-align: top;
+}
+
+.notes-cell {
+  max-width: 220px;
+  font-size: 0.9rem;
+}
+
+.alert-info {
+  background-color: #1f3f5a;
+  color: #d6ecff;
+}
+
+/* ---------- Manage Tables + Daily Schedule (Step 23) ---------- */
+
+.toolbar input[type="date"] {
+  min-width: auto;
+  color-scheme: dark;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.legend-item {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.schedule-table th,
+.schedule-table td {
+  text-align: center;
+}
+
+.schedule-table th:first-child,
+.schedule-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.slot-cell {
+  border-left: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.slot-free {
+  color: var(--color-muted);
+}
+
+.slot-pending {
+  background-color: rgba(92, 74, 18, 0.6);
+}
+
+.slot-confirmed {
+  background-color: rgba(31, 81, 48, 0.7);
+}
+
+.slot-completed {
+  background-color: rgba(58, 58, 58, 0.8);
+}
+
+/* Out-of-service tables are faded in the schedule */
+.row-out td {
+  opacity: 0.45;
+}

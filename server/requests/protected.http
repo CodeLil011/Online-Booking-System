@@ -1,0 +1,179 @@
+### ===== RUN THESE 3 LOGINS FIRST (they save the tokens) =====
+
+### 1. Login as CUSTOMER (Maria)
+# @name customerLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Customer@123"
+}
+
+### 2. Login as STAFF (Marco)
+# @name staffLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "marco.delosreyes@gmail.com",
+  "password": "Staff@123"
+}
+
+### 3. Login as ADMIN (Andrea)
+# @name adminLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "andrea.villanueva@gmail.com",
+  "password": "Admin@123"
+}
+
+### Saved tokens (filled in automatically from the 3 logins above)
+@customerToken = {{customerLogin.response.body.token}}
+@staffToken = {{staffLogin.response.body.token}}
+@adminToken = {{adminLogin.response.body.token}}
+
+
+### ===== GUARD 1: protect (are you logged in?) =====
+
+### 4. "Who am I?" with NO token (expect 401 "Please log in first")
+GET http://localhost:5000/api/auth/me
+
+### 5. "Who am I?" with a FAKE token (expect 401 invalid/expired)
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer abc.def.ghi
+
+### 6. "Who am I?" as the customer (expect 200, Maria Santos, no passwordHash)
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer {{customerToken}}
+
+
+### ===== MY PROFILE =====
+
+### 7. Update my phone + try to make myself admin (expect 200, role STILL customer)
+PUT http://localhost:5000/api/auth/me
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "phone": "09179998888",
+  "role": "admin"
+}
+
+### 8. Change my email to one that is already used (expect 409)
+PUT http://localhost:5000/api/auth/me
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "email": "marco.delosreyes@gmail.com"
+}
+
+### 9. Change password with the WRONG current password (expect 400)
+PUT http://localhost:5000/api/auth/me/password
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "WrongPass123",
+  "newPassword": "Maria2026new"
+}
+
+### 10. Change password to a WEAK one (expect 400)
+PUT http://localhost:5000/api/auth/me/password
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Customer@123",
+  "newPassword": "short"
+}
+
+### 11. Change password correctly (expect 200)
+PUT http://localhost:5000/api/auth/me/password
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Customer@123",
+  "newPassword": "Maria2026new"
+}
+
+### 12. Login with the OLD password (expect 401)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Customer@123"
+}
+
+### 13. Login with the NEW password (expect 200)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Maria2026new"
+}
+
+
+### ===== GUARD 2: allowRoles (is your role allowed?) =====
+
+### 14. View ALL reservations with NO token (expect 401)
+GET http://localhost:5000/api/reservations
+
+### 15. View ALL reservations as CUSTOMER (expect 403 "You do not have permission")
+GET http://localhost:5000/api/reservations
+Authorization: Bearer {{customerToken}}
+
+### 16. View ALL reservations as STAFF (expect 200)
+GET http://localhost:5000/api/reservations
+Authorization: Bearer {{staffToken}}
+
+### 17. CUSTOMER tries to confirm a reservation (expect 403)
+PATCH http://localhost:5000/api/reservations/r2/status
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 18. STAFF confirms the reservation (expect 200)
+PATCH http://localhost:5000/api/reservations/r2/status
+Authorization: Bearer {{staffToken}}
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 19. CUSTOMER tries to edit a table (expect 403)
+PUT http://localhost:5000/api/tables/t11
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "status": "available"
+}
+
+### 20. ADMIN edits the table (expect 200)
+PUT http://localhost:5000/api/tables/t11
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "available"
+}
+
+
+### ===== PUBLIC (no login needed) =====
+
+### 21. View tables with no token (expect 200)
+GET http://localhost:5000/api/tables
+
+### 22. Check availability with no token (expect 200)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-12&time=19:00&guests=2

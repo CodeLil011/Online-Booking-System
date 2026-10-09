@@ -1,0 +1,94 @@
+### 1. STAFF CONFIRMS a Pending reservation: r2 (expect 200)
+PATCH http://localhost:5000/api/reservations/r2/status
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 2. Confirm r2 again (expect 400: Confirmed -> Confirmed not allowed)
+PATCH http://localhost:5000/api/reservations/r2/status
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 3. STAFF REJECTS a Pending reservation: r3 (expect 200, cancelledBy "staff")
+PATCH http://localhost:5000/api/reservations/r3/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled",
+  "reason": "Function area closed for a private event"
+}
+
+### 4. Try to confirm the rejected r3 (expect 400: Cancelled is final)
+PATCH http://localhost:5000/api/reservations/r3/status
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 5. STAFF COMPLETES r6, a past Confirmed reservation (expect 200)
+PATCH http://localhost:5000/api/reservations/r6/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### 6. Complete r1 before its date (expect 400: too early)
+PATCH http://localhost:5000/api/reservations/r1/status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### 7. Change a Completed reservation: r5 (expect 400: Completed is final)
+PATCH http://localhost:5000/api/reservations/r5/status
+Content-Type: application/json
+
+{
+  "status": "Cancelled"
+}
+
+### 8. Invalid status value (expect 400)
+PATCH http://localhost:5000/api/reservations/r1/status
+Content-Type: application/json
+
+{
+  "status": "Done"
+}
+
+### 9. CUSTOMER CANCELS their Confirmed reservation: r1 (expect 200, cancelledBy "customer")
+PATCH http://localhost:5000/api/reservations/r1/cancel
+Content-Type: application/json
+
+{
+  "reason": "Change of plans"
+}
+
+### 10. Table 5 is now FREE on Oct 10, 7 PM (expect count 7: Table 5 is back)
+GET http://localhost:5000/api/reservations/availability?date=2026-10-10&time=19:00&guests=4
+
+### 11. Cancel r1 again (expect 400: already Cancelled)
+PATCH http://localhost:5000/api/reservations/r1/cancel
+Content-Type: application/json
+
+{
+  "reason": "Again"
+}
+
+### 12. Reservation that does not exist (expect 404)
+PATCH http://localhost:5000/api/reservations/r999/status
+Content-Type: application/json
+
+{
+  "status": "Confirmed"
+}
+
+### 13. All Cancelled reservations (expect count 3: r1, r3, r4)
+GET http://localhost:5000/api/reservations?status=Cancelled

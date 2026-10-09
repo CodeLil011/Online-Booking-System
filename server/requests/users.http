@@ -1,0 +1,198 @@
+### ===== RUN THESE 3 LOGINS FIRST =====
+
+### 1. Login as ADMIN
+# @name adminLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "andrea.villanueva@gmail.com",
+  "password": "Admin@123"
+}
+
+### 2. Login as STAFF
+# @name staffLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "marco.delosreyes@gmail.com",
+  "password": "Staff@123"
+}
+
+### 3. Login as CUSTOMER
+# @name customerLogin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Customer@123"
+}
+
+@adminToken = {{adminLogin.response.body.token}}
+@staffToken = {{staffLogin.response.body.token}}
+@customerToken = {{customerLogin.response.body.token}}
+
+
+### ===== WHO CAN ACCESS =====
+
+### 4. No token (expect 401)
+GET http://localhost:5000/api/users
+
+### 5. Staff (expect 403: admin only)
+GET http://localhost:5000/api/users
+Authorization: Bearer {{staffToken}}
+
+### 6. Admin: all users (expect 200, count 4, admin first)
+GET http://localhost:5000/api/users
+Authorization: Bearer {{adminToken}}
+
+
+### ===== VIEW / FILTER / SEARCH =====
+
+### 7. Only customers (expect count 2)
+GET http://localhost:5000/api/users?role=customer
+Authorization: Bearer {{adminToken}}
+
+### 8. Only inactive (expect count 1: Paolo)
+GET http://localhost:5000/api/users?status=inactive
+Authorization: Bearer {{adminToken}}
+
+### 9. Search "santos" (expect Maria Santos)
+GET http://localhost:5000/api/users?search=santos
+Authorization: Bearer {{adminToken}}
+
+### 10. Invalid role filter (expect 400)
+GET http://localhost:5000/api/users?role=chef
+Authorization: Bearer {{adminToken}}
+
+
+### ===== ADD USERS =====
+
+### 11. Admin creates a STAFF account (expect 201, role "staff", no passwordHash)
+POST http://localhost:5000/api/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Joanna Cruz",
+  "email": "joanna.cruz@gmail.com",
+  "phone": "09193334444",
+  "role": "staff",
+  "password": "Staff2026pass"
+}
+
+### 12. Same email again (expect 409)
+POST http://localhost:5000/api/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Joanna Cruz",
+  "email": "joanna.cruz@gmail.com",
+  "phone": "09193334444",
+  "role": "staff",
+  "password": "Staff2026pass"
+}
+
+### 13. Invalid data (expect 400: phone, role, password errors)
+POST http://localhost:5000/api/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Test Person",
+  "email": "test.person@gmail.com",
+  "phone": "123",
+  "role": "manager",
+  "password": "short"
+}
+
+### 14. New staff can log in (expect 200, role "staff")
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "joanna.cruz@gmail.com",
+  "password": "Staff2026pass"
+}
+
+
+### ===== EDIT / ROLES / STATUS =====
+
+### 15. Reactivate Paolo (expect 200, status "active")
+PUT http://localhost:5000/api/users/u4
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+
+### 16. Paolo can log in now (expect 200)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "paolo.garcia@outlook.com",
+  "password": "Customer@123"
+}
+
+### 17. Edit Maria's phone (expect 200)
+PUT http://localhost:5000/api/users/u3
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "phone": "09175556666"
+}
+
+### 18. Admin tries to change OWN role (expect 400)
+PUT http://localhost:5000/api/users/u1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "customer"
+}
+
+### 19. Admin tries to deactivate OWN account (expect 400)
+PUT http://localhost:5000/api/users/u1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "inactive"
+}
+
+### 20. Try to change a password here (expect 400)
+PUT http://localhost:5000/api/users/u3
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "password": "NewPass2026"
+}
+
+### 21. Deactivate Marco, the staff member (expect 200, status "inactive")
+PUT http://localhost:5000/api/users/u2
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "inactive"
+}
+
+### 22. Marco's OLD token stops working immediately (expect 401)
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer {{staffToken}}
+
+### 23. User that does not exist (expect 404)
+PUT http://localhost:5000/api/users/u999
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}

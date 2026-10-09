@@ -1,0 +1,126 @@
+### 1. Register a new customer (expect 201, role "customer", token, NO passwordHash)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Liza Ramos",
+  "email": "liza.ramos@gmail.com",
+  "phone": "09061234567",
+  "password": "Liza2026pass"
+}
+
+### 2. Same email, different capital letters (expect 409)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Liza Ramos",
+  "email": "LIZA.RAMOS@gmail.com",
+  "phone": "09061234567",
+  "password": "Liza2026pass"
+}
+
+### 3. Try to register as ADMIN (expect 201, but role is still "customer")
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Sneaky User",
+  "email": "sneaky.user@gmail.com",
+  "phone": "09071234567",
+  "password": "Sneaky2026pass",
+  "role": "admin"
+}
+
+### 4. Invalid data (expect 400 with 4 errors)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "",
+  "email": "not-an-email",
+  "phone": "123",
+  "password": "short"
+}
+
+### 5. Password without a number (expect 400)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Ken Navarro",
+  "email": "ken.navarro@gmail.com",
+  "phone": "09081234567",
+  "password": "onlyletters"
+}
+
+### 6. Login as ADMIN (expect 200, role "admin")
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "andrea.villanueva@gmail.com",
+  "password": "Admin@123"
+}
+
+### 7. Login as STAFF (expect 200, role "staff")
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "marco.delosreyes@gmail.com",
+  "password": "Staff@123"
+}
+
+### 8. Login as CUSTOMER (expect 200, role "customer")
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "Customer@123"
+}
+
+### 9. Wrong password (expect 401 "Invalid email or password")
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com",
+  "password": "WrongPass123"
+}
+
+### 10. Email that doesn't exist (expect 401, SAME message as #9)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody.here@gmail.com",
+  "password": "Customer@123"
+}
+
+### 11. Missing password (expect 400)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@gmail.com"
+}
+
+### 12. Deactivated account (expect 403)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "paolo.garcia@outlook.com",
+  "password": "Customer@123"
+}
+
+### 13. Login with the account created in #1 (expect 200)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "liza.ramos@gmail.com",
+  "password": "Liza2026pass"
+}
