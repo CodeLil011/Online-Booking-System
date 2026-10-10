@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getUsers, createUserAccount, updateUserAccount } from "../../api/userApi";
+import { archiveUser } from "../../api/archiveApi";
 import Modal from "../../components/Modal";
 import UserForm from "../../components/UserForm";
 
@@ -79,6 +80,23 @@ function ManageUsersPage() {
   };
 
   // "2026-09-20T10:30:00.000Z" -> "Sep 20, 2026"
+    // Move a DEACTIVATED account to the Archive (asks for confirmation first)
+  const handleArchive = async (user) => {
+    const question = `Move ${user.fullName}'s account to the Archive? It will be hidden from this list. You can restore it later.`;
+    if (!window.confirm(question)) return;
+
+    setError("");
+    setMessage("");
+    try {
+      await archiveUser(user._id);
+      setMessage(`${user.fullName}'s account was moved to the Archive.`);
+      reloadUsers();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+
   const formatDate = (isoDate) =>
     new Date(isoDate).toLocaleDateString("en-PH", {
       year: "numeric",
@@ -200,6 +218,13 @@ function ManageUsersPage() {
                             onClick={() => handleToggleStatus(user)}
                           >
                             {user.status === "active" ? "Deactivate" : "Activate"}
+                          </button>
+                        )}
+
+                        {/* Only deactivated accounts can be archived */}
+                        {user.status === "inactive" && (
+                          <button className="btn btn-outline" onClick={() => handleArchive(user)}>
+                            Archive
                           </button>
                         )}
                       </div>

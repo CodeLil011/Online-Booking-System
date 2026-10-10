@@ -78,7 +78,12 @@ const reservations = [
     specialRequest: "Window seat if possible",
     status: "Completed",
     createdAt: "2026-09-25T08:30:00.000Z",
+    // Already in the archive (so the Archive page has a sample record)
+    archived: true,
+    archivedAt: "2026-10-01T09:00:00.000Z",
+    archivedBy: "u1", // archived by Andrea (Admin)
   },
+
   {
     _id: "r6",
     customer: null,

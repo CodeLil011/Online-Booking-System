@@ -180,7 +180,8 @@ const getAllReservations = (req, res) => {
     });
   }
 
-  let result = reservations;
+  // Archived reservations are hidden here (they appear on the Archive page instead)
+  let result = reservations.filter((r) => !r.archived);
   if (date) result = result.filter((r) => r.date === date);
   if (status) result = result.filter((r) => r.status === status);
   if (table) result = result.filter((r) => r.table === table);

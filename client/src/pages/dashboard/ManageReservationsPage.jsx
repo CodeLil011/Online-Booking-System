@@ -10,6 +10,7 @@ import {
   createReservation,
   updateReservation,
 } from "../../api/reservationApi";
+import { archiveReservation } from "../../api/archiveApi";
 import { formatDate, formatTime, getTodayString, getNowString } from "../../utils/dateHelpers";
 import Modal from "../../components/Modal";
 import ReservationForm from "../../components/ReservationForm";
@@ -135,6 +136,26 @@ function ManageReservationsPage() {
     }
   };
 
+    // ----- Archive (Completed / Cancelled only) -----
+  const handleArchive = async (r) => {
+    const question = `Move ${r.customerName}'s ${r.status} reservation (${r._id}) to the Archive? You can restore it later.`;
+    if (!window.confirm(question)) return;
+
+    setError("");
+    setMessage("");
+    setBusyId(r._id);
+    try {
+      await archiveReservation(r._id);
+      setMessage(`Reservation ${r._id} (${r.customerName}) was moved to the Archive.`);
+      reload();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+
   // ----- New booking / Edit (called by ReservationForm) -----
   // If the API fails, the error goes back to ReservationForm and is shown inside the form.
   const handleSaveReservation = async (data) => {
@@ -212,7 +233,12 @@ function ManageReservationsPage() {
       );
     }
 
-    return <span className="muted">No actions</span>; // Completed or Cancelled (final)
+        // Completed or Cancelled (final): the only action left is moving it to the Archive
+    return (
+      <button className="btn btn-outline" disabled={busy} onClick={() => handleArchive(r)}>
+        Archive
+      </button>
+    );
   };
 
   return (

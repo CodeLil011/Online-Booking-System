@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management): Steps 21–22 ✅, next Step 23
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): next Step 27 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -902,6 +902,121 @@ saves the new hash, deletes the token → user logs in
 
 ---
 
+### STEP 23: Manage Tables page (tables + daily schedule)
+**Goal:** Let staff manage the dining area and see which tables are booked in each seating.
+
+**What we did**
+- `components/TableForm.jsx`: one form, two modes (add / edit) for table number, capacity, and location (with location suggestions), shown in the `Modal`.
+- `ManageTablesPage.jsx` now has **two tabs**:
+  - **Tables**: list with an "Upcoming bookings" count, **Add Table**, **Edit**, and **Take out of service / Put back in service**.
+  - **Daily Schedule**: pick a date and see a grid (tables × the 5 seatings) showing which table is free, Pending, Confirmed, or Completed. Cancelled bookings don't count. Out-of-service tables are faded.
+- Staff see **"In Service / Out of Service"** labels instead of the backend's `available` / `unavailable`.
+- Taking a table out of service asks "Are you sure?" and **warns if the table still has upcoming bookings** (they are kept; staff should move them with Edit).
+- CSS: legend, schedule grid colors, faded out-of-service rows.
+
+**Two kinds of "availability" (common question):**
+| | Table status (In/Out of Service) | Booked or free in a seating |
+|---|---|---|
+| Who sets it | Staff, manually | Automatic, from reservations |
+| Meaning | Can this table be used at all? (broken, being repaired, reserved for events) | Is it taken at 7:00 PM on Oct 10? |
+| Where | Tables tab | Daily Schedule tab |
+
+**Mistake we hit:** `TableForm.jsx` was created in `pages/dashboard` instead of `components`, so the import failed. Lesson: reusable forms live in `components/`; only full pages go in `pages/`.
+
+**Presentation line (Step 23):**
+> "The Tables page has two views. In the Tables tab, staff add and edit tables and can take one out of service, for example if it's broken; the system then stops assigning it to new bookings and warns if it still has upcoming reservations. The Daily Schedule tab shows, for any date, which table is booked in each seating. That part is automatic: it is calculated from the reservations, so staff never update it by hand."
+
+---
+
+### STEP 24: Dashboard Overview + Customers page (end of Phase 7)
+**Goal:** Give staff a starting page with today's situation, and a way to look up customers.
+
+**What we did**
+- `DashboardHomePage.jsx` (Overview): greeting + today's date, **4 cards** (Bookings today, Guests expected today, Pending requests, Tables in service), **Today's Reservations** table, and the 5 soonest **Pending Requests** with a link to Manage Reservations. **No new backend route**: it loads 3 existing lists at once with `Promise.all` and counts them in the browser.
+- New backend `controllers/customerController.js` + `routes/customerRoutes.js`, mounted at `/api/customers` (Admin + Staff, **read-only**):
+  - `GET /api/customers` (`?search=` name/email/phone, `?status=`): customer accounts + a `bookings` summary (total, completed, cancelled, upcoming, lastVisit).
+  - `GET /api/customers/:id`: one customer + full booking history (newest first). 404 for non-customers.
+- `api/customerApi.js` and `CustomersPage.jsx`: list with search/status filter and a **View** pop-up with contact info and booking history.
+- CSS: stat cards, dashboard sections, history list.
+
+**Why a separate `/api/customers` route?** `/api/users` is Admin-only and can **edit** accounts. Staff need to **see** customers (to call them about a booking), not manage accounts. A separate read-only route gives staff exactly what they need and nothing more (**least privilege**).
+
+**How the numbers are counted**
+| Number | Rule |
+|---|---|
+| Bookings today | Today's reservations with status Pending or Confirmed |
+| Guests expected today | Sum of `guests` of those bookings |
+| Pending requests | Pending reservations whose time hasn't passed yet |
+| Customer "Upcoming" | Their Pending/Confirmed bookings from today on |
+| Customer "Last visit" | Latest date among their **Completed** bookings |
+
+Phone/walk-in bookings (`customer: null`) aren't linked to an account, so they don't count in customer stats.
+
+**Testing note:** at night every seating for today has passed, so a booking for "today" can't be made; the "today" cards were checked the next day using the sample bookings (Oct 10).
+
+**Presentation line:**
+> "When staff log in, the Overview shows today's bookings, expected guests, pending requests, and tables in service. These numbers aren't stored anywhere; they're calculated from the reservations every time the page opens, so they're always current. The Customers page lets staff look up a customer's contact details and booking history, but it's read-only: only the Admin can edit accounts."
+
+---
+
+### STEP 25: Archive reservations (Phase 8)
+**Goal:** Archive module requirement (view, search, restore) for reservations.
+
+**What we did**
+- New `controllers/archiveController.js` + `routes/archiveRoutes.js`, mounted at `/api/archive` (Staff/Admin):
+  - `GET /api/archive/reservations` (`?search=` name/email/phone/ref), most recently archived first, with `archivedByName`.
+  - `PATCH /api/archive/reservations/:id/archive` and `.../:id/restore`.
+- `getAllReservations` now hides archived records: `reservations.filter((r) => !r.archived)`.
+- Sample data: **r5 (Carlo)** starts archived (by Andrea, Oct 1) so the Archive page isn't empty.
+- `api/archiveApi.js`, **Archive** button on Completed/Cancelled rows in `ManageReservationsPage.jsx`, and `ArchivePage.jsx` (search + Restore).
+
+**Rules**
+| Rule | Why |
+|---|---|
+| Only Completed/Cancelled can be archived | Pending/Confirmed bookings still need staff action |
+| Archived = hidden from Manage Reservations | A cleaner working list |
+| Restore = back unchanged (same status) | Archive is reversible |
+| Save `archivedAt` + `archivedBy` | Accountability (when and who) |
+| Customers still see archived bookings in My Reservations | It's still their real visit; archive is staff housekeeping |
+
+**Archive vs delete:** archiving sets a flag (`archived: true`) instead of removing the record, often called a **soft delete**. Restoring turns the flag off. Nothing is ever lost, which matters for records like completed transactions.
+
+**Testing confusion we hit:** the staff Reservations page defaults to **View: Upcoming**, so past bookings (Sep 26) only appear under **Past/All**. "History" is the customer's tab in My Reservations, not a staff page.
+
+**Presentation line:**
+> "Finished bookings can be moved to the Archive to keep the staff's working list clean. Archiving never deletes anything; it marks the record as archived and saves who did it and when. The Archive page lets staff search those records and restore any of them, unchanged. Only completed or cancelled bookings can be archived, and the backend enforces that."
+
+---
+
+### STEP 26: Archive user accounts (end of Phase 8)
+**Goal:** Archive old accounts (e.g. a staff member who left) without deleting them.
+
+**What we did**
+- `archiveController.js` / `archiveRoutes.js`: added `GET /api/archive/users`, `PATCH /api/archive/users/:id/archive`, `PATCH /api/archive/users/:id/restore`, **Admin only** (`allowRoles("admin")` on each user route, on top of the router-wide `allowRoles("admin", "staff")`).
+- `userController.js`: `getAllUsers` hides archived accounts; `updateUser` refuses to edit an archived account ("Restore it from the Archive first").
+- `customerController.js`: the Customers list hides archived accounts.
+- `ManageUsersPage.jsx`: **Archive** button on **inactive** accounts.
+- `ArchivePage.jsx`: Admin sees **2 tabs** (Reservations / User Accounts); Staff see only reservations. One file, three functions: `ArchivePage` (picks the tab), `ArchivedReservations`, `ArchivedUsers`.
+
+**Rules**
+| Rule | Why |
+|---|---|
+| Admin only | Staff don't manage accounts |
+| Must be **deactivated first** | An archived account can never log in; the Step 11 login check already blocks inactive accounts. Also protects the admin's own (active) account |
+| Hidden from Users and Customers | Cleaner lists |
+| Can't be edited while archived | Restore first |
+| Restore → back **inactive** | Activating is a separate, deliberate decision |
+| Their reservations stay | Booking history is never touched |
+
+**Small UI fixes in this step**
+- **Two eye icons** on password boxes in Microsoft Edge: Edge adds its own reveal button. Hidden with `.password-input input::-ms-reveal { display: none; }`.
+- **Phone box sticking out of the New Booking pop-up:** grid columns set to `1fr` won't shrink below an input's default width. Fixed with `grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)` and `width: 100%` on inputs in `.form-row`.
+
+**Presentation line:**
+> "The Admin can archive old accounts, like a staff member who resigned. An account must be deactivated first, so an archived account can never log in. Archived accounts disappear from the user and customer lists but nothing is deleted: their booking history stays, and the Admin can restore the account at any time. It comes back inactive, so reactivating it is a separate decision."
+
+---
+
 ## 6. API Reference
 
 Base URL: `http://localhost:5000/api`
@@ -929,6 +1044,22 @@ Base URL: `http://localhost:5000/api`
 | PUT | `/reservations/:id` | Edit details | Staff, Admin |
 | PATCH | `/reservations/:id/status` | Confirm / reject / complete | Staff, Admin |
 | PATCH | `/reservations/:id/cancel` | Cancel own booking | Customer (owner) |
+
+### Customers (Step 24)
+| Method | URL | Purpose | Access |
+|---|---|---|---|
+| GET | `/customers` | Customer accounts + booking summary (`?search=`, `?status=`) | Staff, Admin |
+| GET | `/customers/:id` | One customer + booking history | Staff, Admin |
+
+### Archive (Steps 25–26)
+| Method | URL | Purpose | Access |
+|---|---|---|---|
+| GET | `/archive/reservations` | Archived reservations (`?search=`) | Staff, Admin |
+| PATCH | `/archive/reservations/:id/archive` | Archive a Completed/Cancelled reservation | Staff, Admin |
+| PATCH | `/archive/reservations/:id/restore` | Restore it | Staff, Admin |
+| GET | `/archive/users` | Archived accounts (`?search=`) | Admin |
+| PATCH | `/archive/users/:id/archive` | Archive an inactive account | Admin |
+| PATCH | `/archive/users/:id/restore` | Restore it (stays inactive) | Admin |
 
 ### Response format
 ```json
@@ -966,6 +1097,7 @@ Base URL: `http://localhost:5000/api`
 | `Cannot find module '../utils/emailService'` and `Could not resolve './pages/ForgotPasswordPage'` (Step 15) | `emailService..js` and `ResetPasswordPage..jsx` (two dots), `ReseetPasswordPage` and `ForgetPasswordPage` (typos) | Rename to `emailService.js`, `ResetPasswordPage.jsx`, `ForgotPasswordPage.jsx`; type the whole name fresh when renaming |
 | `Cannot find module '../controllers/authController'` (Step 11) | Files named `authControllersjs` (extra "s", missing dot) and `user.js` (missing "s") | Rename to `authController.js` and `users.js` |
 | "Cannot connect to the server. Is the backend running?" (Step 10) | Only the frontend was running | Start the backend in a second terminal (`server` → `npm run dev`); both must run |
+| `Failed to resolve import "../../components/TableForm"` (Step 23) | `TableForm.jsx` was saved in `pages/dashboard` | Move it to `client/src/components` |
 | Page completely black (Step 8) | `main.jsx` not replaced, so `<App />` was not inside `<BrowserRouter>`; React Router crashed | Replace `main.jsx`; check **F12 → Console** for the red error |
 
 **Lessons**

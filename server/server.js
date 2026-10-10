@@ -20,6 +20,8 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const tableRoutes = require("./routes/tableRoutes");
 const reservationRoutes = require("./routes/reservationRoutes");
+const customerRoutes = require("./routes/customerRoutes");
+const archiveRoutes = require("./routes/archiveRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 // 4. Create the Express application
@@ -43,6 +45,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/archive", archiveRoutes);
 
 // 7. Error handling (must come AFTER all routes)
 app.use(notFound); // no route matched

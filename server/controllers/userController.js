@@ -74,7 +74,8 @@ const getAllUsers = (req, res) => {
     });
   }
 
-  let result = users;
+ // Archived accounts are hidden here (they appear on the Archive page instead)
+  let result = users.filter((u) => !u.archived);
   if (role) result = result.filter((u) => u.role === role);
   if (status) result = result.filter((u) => u.status === status);
   if (search) {
@@ -155,6 +156,14 @@ const updateUser = (req, res) => {
   const user = users.find((u) => u._id === req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  // Archived accounts must be restored from the Archive before they can be edited
+  if (user.archived) {
+    return res.status(400).json({
+      success: false,
+      message: "This account is archived. Restore it from the Archive first.",
+    });
   }
 
   const data = req.body || {};

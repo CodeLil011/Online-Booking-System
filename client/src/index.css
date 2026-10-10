@@ -740,8 +740,17 @@ a {
 /* Two fields side by side (Email | Phone, Date | Guests); stacked on phones */
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr) lets columns shrink smaller than the inputs' default width */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+}
+/* Inputs fill their column exactly (never wider) */
+.form-row .form-group {
+  min-width: 0;
+}
+.form-row input,
+.form-row select {
+  width: 100%;
 }
 
 @media (max-width: 500px) {
@@ -948,4 +957,70 @@ a {
 /* Out-of-service tables are faded in the schedule */
 .row-out td {
   opacity: 0.45;
+}
+
+
+/* ---------- Dashboard Overview + Customers (Step 24) ---------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* 4 across, fewer on small screens */
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border-left: 4px solid var(--color-brown);
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.stat-label {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+}
+
+.stat-note {
+  font-size: 0.8rem;
+}
+
+.dashboard-section {
+  margin-top: 32px;
+}
+
+.dashboard-section h2 {
+  font-size: 1.2rem;
+}
+
+/* Emails should not be capitalized in the info rows */
+.info-row strong.no-caps {
+  text-transform: none;
+}
+
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.password-input input::-ms-reveal,
+.password-input input::-ms-clear {
+  display: none;
 }
