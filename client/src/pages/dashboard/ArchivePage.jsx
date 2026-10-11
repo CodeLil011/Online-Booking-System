@@ -93,7 +93,7 @@ function ArchivedReservations() {
     setBusyId(r._id);
     try {
       await restoreReservation(r._id);
-      setMessage(`Reservation ${r._id} (${r.customerName}) was restored to Manage Reservations.`);
+      setMessage(`Reservation ${formatRef(r._id)} (${r.customerName}) was restored to Manage Reservations.`);
       setRefreshKey((key) => key + 1); // reload the list
     } catch (err) {
       setError(err.message);

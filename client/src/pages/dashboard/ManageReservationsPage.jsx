@@ -127,7 +127,7 @@ function ManageReservationsPage() {
     setSavingCancel(true);
     try {
       await changeReservationStatus(r._id, "Cancelled", reason);
-      setMessage(`${r.customerName}'s reservation (${r._id}) was cancelled (${toCancel.action}).`);
+      setMessage(`${r.customerName}'s reservation (${formatRef(r._id)}) was cancelled (${toCancel.action}).`);
       setToCancel(null);
       reload();
     } catch (err) {
@@ -139,15 +139,14 @@ function ManageReservationsPage() {
 
     // ----- Archive (Completed / Cancelled only) -----
   const handleArchive = async (r) => {
-    const question = `Move ${r.customerName}'s ${r.status} reservation (${r._id}) to the Archive? You can restore it later.`;
+   	    const question = `Move ${r.customerName}'s ${r.status} reservation (${formatRef(r._id)}) to the Archive? You can restore it later.`;
     if (!window.confirm(question)) return;
-
     setError("");
     setMessage("");
     setBusyId(r._id);
     try {
       await archiveReservation(r._id);
-      setMessage(`Reservation ${r._id} (${r.customerName}) was moved to the Archive.`);
+            setMessage(`Reservation ${formatRef(r._id)} (${r.customerName}) was moved to the Archive.`);
       reload();
     } catch (err) {
       setError(err.message);
@@ -167,7 +166,7 @@ function ManageReservationsPage() {
       );
     } else {
       const updated = await updateReservation(formModal.reservation._id, data);
-      setMessage(`Reservation ${formatRef(updated._id)} (${updated.customerName}) was updated.`);
+            setMessage(`Reservation ${formatRef(updated._id)} (${updated.customerName}) was updated.`);
     }
 
     setError("");
@@ -404,7 +403,7 @@ function ManageReservationsPage() {
           title={
             formModal.mode === "add"
               ? "New Booking (phone / walk-in)"
-              : `Edit Reservation (${formatRef(formModal.reservation._id)}	)`
+              : `Edit Reservation (${formatRef(formModal.reservation._id)})`
           }
           onClose={() => setFormModal(null)}
         >
