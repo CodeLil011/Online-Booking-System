@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): next Step 27 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Step 27 ✅, next Step 28 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -1017,6 +1017,33 @@ Phone/walk-in bookings (`customer: null`) aren't linked to an account, so they d
 
 ---
 
+### STEP 27: Connect to MongoDB Atlas (Phase 9 starts)
+**Goal:** Make data permanent. Until now everything lived in memory, so every restart reset it.
+
+**Phase 9 plan:** 27 connect → 28 models + seed script → 29 tables/auth/users use MongoDB → 30 reservations → 31 customers/archive + remove the old `data/` arrays.
+
+**What we did**
+- Created a free **MongoDB Atlas** cluster (M0, AWS Singapore), a database user `poundadmin` (read/write), and allowed connections from anywhere (`0.0.0.0/0`, IP Access List).
+- `npm install mongoose`. **Why Mongoose:** the standard way to use MongoDB from Node.js; it adds **schemas** (rules for each record) and simple commands like `User.find()`.
+- `.env`: `MONGO_URI=mongodb+srv://poundadmin:PASSWORD@cluster0.xxxxx.mongodb.net/pound_reservations?appName=Cluster0`. `.env.example` has a fake placeholder.
+- New `config/db.js`: `connectDB()` (connects, or prints the error and stops) and `getDatabaseStatus()`.
+- `server.js`: checks `MONGO_URI` exists, **connects to MongoDB first and only then starts listening**, and `/api/health` now shows `"database": "connected"`.
+
+**Why Atlas (cloud) instead of MongoDB on each laptop?** Nothing to install, and the whole group (and the presentation laptop) share **one** database with the same data. Downside: it needs internet, so bring a phone hotspot to the presentation.
+
+**Why `0.0.0.0/0`?** Our IP changes (home, school, hotspot) and the groupmate has a different one. The database is still protected by its username and password.
+
+**Mistakes we hit**
+| Problem | Cause | Fix |
+|---|---|---|
+| `bad auth : authentication failed` | Password in `MONGO_URI` didn't match the Atlas user's password | Atlas → Database Users → Edit → set the same password |
+| Data would go to a database named `test` | No name after `.net/` in the connection string | Add `pound_reservations` between `.net/` and `?` |
+
+**Presentation line:**
+> "The backend stores its data in MongoDB Atlas, a cloud database. The connection string contains a password, so it's kept in the .env file and never uploaded to GitHub. When the server starts, it connects to the database first and only then accepts requests; if the connection fails it stops with a clear message instead of running half-broken."
+
+---
+
 ## 6. API Reference
 
 Base URL: `http://localhost:5000/api`
@@ -1097,6 +1124,7 @@ Base URL: `http://localhost:5000/api`
 | `Cannot find module '../utils/emailService'` and `Could not resolve './pages/ForgotPasswordPage'` (Step 15) | `emailService..js` and `ResetPasswordPage..jsx` (two dots), `ReseetPasswordPage` and `ForgetPasswordPage` (typos) | Rename to `emailService.js`, `ResetPasswordPage.jsx`, `ForgotPasswordPage.jsx`; type the whole name fresh when renaming |
 | `Cannot find module '../controllers/authController'` (Step 11) | Files named `authControllersjs` (extra "s", missing dot) and `user.js` (missing "s") | Rename to `authController.js` and `users.js` |
 | "Cannot connect to the server. Is the backend running?" (Step 10) | Only the frontend was running | Start the backend in a second terminal (`server` → `npm run dev`); both must run |
+| `ERROR: Could not connect to MongoDB: bad auth : authentication failed` (Step 27) | Password in `MONGO_URI` didn't match the Atlas database user | Atlas → Database Users → Edit → Edit Password (letters and numbers only) |
 | `Failed to resolve import "../../components/TableForm"` (Step 23) | `TableForm.jsx` was saved in `pages/dashboard` | Move it to `client/src/components` |
 | Page completely black (Step 8) | `main.jsx` not replaced, so `<App />` was not inside `<BrowserRouter>`; React Router crashed | Replace `main.jsx`; check **F12 → Console** for the red error |
 
