@@ -2,9 +2,11 @@
 // Logic for the /api/reservations endpoints:
 // availability, booking (with automatic table assignment), viewing,
 // editing, and changing reservation status.
+// Reservations and tables are now saved in MongoDB.
 
-const reservations = require("../data/reservations");
-const tables = require("../data/tables");
+const mongoose = require("mongoose");
+const Reservation = require("../models/Reservation");
+const Table = require("../models/Table");
 const {
   TIME_SLOTS,
   MIN_GUESTS,
@@ -108,7 +110,7 @@ const validateReservationData = (data) => {
   if (!isValidGuests(guests)) {
     errors.push(`guests must be a whole number from ${MIN_GUESTS} to ${MAX_GUESTS}`);
   }
-  if (table !== undefined && table !== null && (typeof table !== "string" || table.trim() === "")) {
+  if (table !== undefined && table !== null && table !== "" && !mongoose.isValidObjectId(table)) {
     errors.push("table must be a valid table id");
   }
   if (
@@ -121,31 +123,35 @@ const validateReservationData = (data) => {
   return errors;
 };
 
-// THE CONFLICT CHECK:
-// true if the table already has an ACTIVE reservation (Pending/Confirmed)
-// on the same date and time slot.
+// The MongoDB filter for "ACTIVE (Pending/Confirmed) bookings in this date + time slot".
 // excludeId: a reservation to ignore (used when EDITING, so it doesn't conflict with itself).
-const isTableBooked = (tableId, date, time, excludeId = null) =>
-  reservations.some(
-    (r) =>
-      r._id !== excludeId &&
-      r.table === tableId &&
-      r.date === date &&
-      r.time === time &&
-      ACTIVE_STATUSES.includes(r.status)
-  );
+const activeBookingsFilter = (date, time, excludeId = null) => {
+  const filter = { date, time, status: { $in: ACTIVE_STATUSES } }; // $in = "is one of"
+  if (excludeId) filter._id = { $ne: excludeId };
+  return filter;
+};
+
+// THE CONFLICT CHECK:
+// true if the table already has an ACTIVE reservation on the same date and time slot.
+const isTableBooked = async (tableId, date, time, excludeId = null) =>
+  Boolean(await Reservation.exists({ ...activeBookingsFilter(date, time, excludeId), table: tableId }));
 
 // All tables that can take this party at this date + time, SMALLEST FIRST.
 // Used by: the availability list, the slot buttons, and automatic table assignment.
-const findAvailableTables = (date, time, guests, excludeId = null) =>
-  tables
-    .filter(
-      (t) =>
-        t.status === "available" &&
-        t.capacity >= guests &&
-        !isTableBooked(t._id, date, time, excludeId)
-    )
-    .sort((a, b) => a.capacity - b.capacity || a.tableNumber - b.tableNumber);
+const findAvailableTables = async (date, time, guests, excludeId = null) => {
+  // 1. The ids of tables already booked in this slot
+  const bookedTableIds = await Reservation.distinct(
+    "table",
+    activeBookingsFilter(date, time, excludeId)
+  );
+
+  // 2. In-service tables that are big enough and NOT in that list ($nin = "not in")
+  return Table.find({
+    status: "available",
+    capacity: { $gte: guests },
+    _id: { $nin: bookedTableIds },
+  }).sort({ capacity: 1, tableNumber: 1 });
+};
 
 // true if the reservation's date + time has already arrived.
 const hasStarted = (reservation) =>
@@ -159,18 +165,11 @@ const validateReason = (reason) => {
   return null;
 };
 
-// Replaces the table _id with the full table details in a response.
-// (MongoDB's populate() will do this for us in Phase 9.)
-const withTableDetails = (reservation) => ({
-  ...reservation,
-  table: tables.find((t) => t._id === reservation.table) || null,
-});
-
 // ---------- Controller functions ----------
 
 // GET /api/reservations   (Staff/Admin)
-// Optional filters: ?date=2026-10-10  ?status=Pending  ?table=t5
-const getAllReservations = (req, res) => {
+// Optional filters: ?date=2026-10-10  ?status=Pending  ?table=<table id>
+const getAllReservations = async (req, res) => {
   const { date, status, table } = req.query;
 
   if (status && !RESERVATION_STATUSES.includes(status)) {
@@ -181,33 +180,33 @@ const getAllReservations = (req, res) => {
   }
 
   // Archived reservations are hidden here (they appear on the Archive page instead)
-  let result = reservations.filter((r) => !r.archived);
-  if (date) result = result.filter((r) => r.date === date);
-  if (status) result = result.filter((r) => r.status === status);
-  if (table) result = result.filter((r) => r.table === table);
+  const filter = { archived: { $ne: true } };
+  if (date) filter.date = date;
+  if (status) filter.status = status;
+  if (table) filter.table = table;
 
-  // [...result] makes a copy so sorting does not change the original array
-  const sorted = [...result].sort(
-    (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
-  );
+  // populate("table") replaces the table id with the full table (number, capacity, location)
+  const reservations = await Reservation.find(filter)
+    .sort({ date: 1, time: 1 })
+    .populate("table");
 
-  res.json({ success: true, count: sorted.length, data: sorted.map(withTableDetails) });
+  res.json({ success: true, count: reservations.length, data: reservations });
 };
 
 // GET /api/reservations/my   (Customer)
 // The logged-in customer's OWN reservations, newest date first.
-const getMyReservations = (req, res) => {
-  const mine = reservations
-    .filter((r) => r.customer === req.user._id)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+const getMyReservations = async (req, res) => {
+  const mine = await Reservation.find({ customer: req.user._id })
+    .sort({ date: -1, time: -1 })
+    .populate("table");
 
-  res.json({ success: true, count: mine.length, data: mine.map(withTableDetails) });
+  res.json({ success: true, count: mine.length, data: mine });
 };
 
 // GET /api/reservations/availability?date=2026-10-10&time=19:00&guests=4   (public)
 // The tables that can be booked for that schedule and party size.
-const getAvailableTables = (req, res) => {
-  const { date, time, exclude} = req.query;
+const getAvailableTables = async (req, res) => {
+  const { date, time, exclude } = req.query;
   const guests = Number(req.query.guests); // URL values are text, so convert
 
   const scheduleError = validateSchedule(date, time);
@@ -220,7 +219,8 @@ const getAvailableTables = (req, res) => {
       message: `guests must be a whole number from ${MIN_GUESTS} to ${MAX_GUESTS}`,
     });
   }
-  const availableTables = findAvailableTables(date, time, guests, exclude || null); 
+
+  const availableTables = await findAvailableTables(date, time, guests, exclude || null);
 
   res.json({
     success: true,
@@ -236,7 +236,7 @@ const getAvailableTables = (req, res) => {
 // GET /api/reservations/slots?date=2026-10-10&guests=4   (public)
 // For EACH time slot of that day: can this party still be seated?
 // Used for the time slot buttons on the booking form.
-const getSlotAvailability = (req, res) => {
+const getSlotAvailability = async (req, res) => {
   const { date } = req.query;
   const guests = Number(req.query.guests);
 
@@ -251,45 +251,50 @@ const getSlotAvailability = (req, res) => {
     });
   }
 
-  const slots = TIME_SLOTS.map((time) => {
-    if (hasSlotPassed(date, time)) {
-      return { time, available: false, tablesLeft: 0, reason: "Time has passed" };
-    }
+  // Check all 5 slots at the same time (Promise.all waits for all of them)
+  const slots = await Promise.all(
+    TIME_SLOTS.map(async (time) => {
+      if (hasSlotPassed(date, time)) {
+        return { time, available: false, tablesLeft: 0, reason: "Time has passed" };
+      }
 
-    const tablesLeft = findAvailableTables(date, time, guests).length;
-    return {
-      time,
-      available: tablesLeft > 0,
-      tablesLeft,
-      reason: tablesLeft > 0 ? "" : "Fully booked",
-    };
-  });
+      const tablesLeft = (await findAvailableTables(date, time, guests)).length;
+      return {
+        time,
+        available: tablesLeft > 0,
+        tablesLeft,
+        reason: tablesLeft > 0 ? "" : "Fully booked",
+      };
+    })
+  );
 
   res.json({ success: true, date, guests, data: slots });
 };
 
 // GET /api/reservations/:id   (logged in)
 // Staff/Admin can view any reservation; customers only their OWN.
-const getReservationById = (req, res) => {
-  const reservation = reservations.find((r) => r._id === req.params.id);
+const getReservationById = async (req, res) => {
+  const reservation = await Reservation.findById(req.params.id).populate("table");
 
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
-  if (req.user.role === "customer" && reservation.customer !== req.user._id) {
+
+  const isOwner = reservation.customer && reservation.customer.equals(req.user._id);
+  if (req.user.role === "customer" && !isOwner) {
     return res.status(403).json({
       success: false,
       message: "You can only view your own reservations",
     });
   }
 
-  res.json({ success: true, data: withTableDetails(reservation) });
+  res.json({ success: true, data: reservation });
 };
 
 // POST /api/reservations   (logged in)
 // Creates a reservation. The table is assigned AUTOMATICALLY for customers.
 // Staff/Admin may choose a table (e.g. phone bookings) or let it auto-assign.
-const createReservation = (req, res) => {
+const createReservation = async (req, res) => {
   const data = req.body || {};
 
   // 1. Validate all input and collect every error at once
@@ -307,13 +312,10 @@ const createReservation = (req, res) => {
 
   // 3. A customer cannot hold two active bookings in the same time slot
   if (isCustomer) {
-    const alreadyBooked = reservations.some(
-      (r) =>
-        r.customer === req.user._id &&
-        r.date === date &&
-        r.time === time &&
-        ACTIVE_STATUSES.includes(r.status)
-    );
+    const alreadyBooked = await Reservation.exists({
+      ...activeBookingsFilter(date, time),
+      customer: req.user._id,
+    });
     if (alreadyBooked) {
       return res.status(409).json({
         success: false,
@@ -327,7 +329,7 @@ const createReservation = (req, res) => {
 
   if (requestedTableId) {
     // Staff chose a specific table: check it like before
-    table = tables.find((t) => t._id === requestedTableId);
+    table = await Table.findById(requestedTableId);
 
     if (!table) {
       return res.status(404).json({ success: false, message: "Selected table not found" });
@@ -344,7 +346,7 @@ const createReservation = (req, res) => {
         message: `Table ${table.tableNumber} seats only ${table.capacity} guests`,
       });
     }
-    if (isTableBooked(table._id, date, time)) {
+    if (await isTableBooked(table._id, date, time)) {
       return res.status(409).json({
         success: false,
         message: `Table ${table.tableNumber} is already reserved on ${date} at ${time}`,
@@ -352,7 +354,7 @@ const createReservation = (req, res) => {
     }
   } else {
     // AUTO-ASSIGN: the smallest free table that fits the party
-    table = findAvailableTables(date, time, guests)[0];
+    table = (await findAvailableTables(date, time, guests))[0];
 
     if (!table) {
       return res.status(409).json({
@@ -362,9 +364,8 @@ const createReservation = (req, res) => {
     }
   }
 
-  // 5. Create the reservation. Status is ALWAYS "Pending": staff must confirm it.
-  const newReservation = {
-    _id: `r${Date.now()}`, // temporary unique ID; MongoDB will generate _id later
+  // 5. Save the reservation. Status is ALWAYS "Pending": staff must confirm it.
+  const newReservation = await Reservation.create({
     customer: isCustomer ? req.user._id : null, // which account booked it
     customerName: customerName.trim(),
     customerEmail: customerEmail.trim().toLowerCase(),
@@ -375,23 +376,22 @@ const createReservation = (req, res) => {
     guests,
     specialRequest: specialRequest ? specialRequest.trim() : "",
     status: "Pending",
-    createdAt: new Date().toISOString(),
-  };
+  });
 
-  reservations.push(newReservation);
+  await newReservation.populate("table"); // include the table details in the answer
 
   res.status(201).json({
     success: true,
     message: "Reservation submitted and waiting for confirmation",
-    data: withTableDetails(newReservation),
+    data: newReservation,
   });
 };
 
 // PUT /api/reservations/:id   (Staff/Admin)
 // Edits reservation details. Only the fields that were sent are changed.
-const updateReservation = (req, res) => {
+const updateReservation = async (req, res) => {
   // 1. Find the reservation
-  const reservation = reservations.find((r) => r._id === req.params.id);
+  const reservation = await Reservation.findById(req.params.id);
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
@@ -431,7 +431,8 @@ const updateReservation = (req, res) => {
   }
 
   // 5. MERGE: current data + changes = what the reservation would look like
-  const updated = { ...reservation, ...changes };
+  //    (toObject() turns the MongoDB document into a plain object; the table id becomes text)
+  const updated = { ...reservation.toObject(), table: reservation.table.toString(), ...changes };
 
   // 6. Validate the merged result with the SAME rules as a new booking
   const errors = validateReservationData(updated);
@@ -440,7 +441,7 @@ const updateReservation = (req, res) => {
   }
 
   // 7. Check the table (it may be the same table or a new one)
-  const table = tables.find((t) => t._id === updated.table);
+  const table = await Table.findById(updated.table);
 
   if (!table) {
     return res.status(404).json({ success: false, message: "Selected table not found" });
@@ -459,32 +460,33 @@ const updateReservation = (req, res) => {
   }
 
   // 8. Conflict check, IGNORING this reservation itself
-  if (isTableBooked(updated.table, updated.date, updated.time, reservation._id)) {
+  if (await isTableBooked(table._id, updated.date, updated.time, reservation._id)) {
     return res.status(409).json({
       success: false,
       message: `Table ${table.tableNumber} is already reserved on ${updated.date} at ${updated.time}`,
     });
   }
 
-  // 9. Everything is valid: save the changes
+  // 9. Everything is valid: save the changes to MongoDB
   reservation.customerName = updated.customerName.trim();
   reservation.customerEmail = updated.customerEmail.trim().toLowerCase();
   reservation.customerPhone = updated.customerPhone;
-  reservation.table = updated.table;
+  reservation.table = table._id;
   reservation.date = updated.date;
   reservation.time = updated.time;
   reservation.guests = updated.guests;
   reservation.specialRequest = updated.specialRequest ? updated.specialRequest.trim() : "";
-  reservation.updatedAt = new Date().toISOString();
+  await reservation.save();
+  await reservation.populate("table");
 
-  res.json({ success: true, message: "Reservation updated", data: withTableDetails(reservation) });
+  res.json({ success: true, message: "Reservation updated", data: reservation });
 };
 
 // PATCH /api/reservations/:id/status   (Staff/Admin)
 // Body: { "status": "Confirmed" | "Cancelled" | "Completed", "reason": "optional" }
-const updateReservationStatus = (req, res) => {
+const updateReservationStatus = async (req, res) => {
   // 1. Find the reservation
-  const reservation = reservations.find((r) => r._id === req.params.id);
+  const reservation = await Reservation.findById(req.params.id);
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
@@ -527,7 +529,7 @@ const updateReservationStatus = (req, res) => {
     });
   }
 
-  // 5. Apply the change
+  // 5. Apply the change and save
   reservation.status = status;
 
   if (status === "Cancelled") {
@@ -535,27 +537,28 @@ const updateReservationStatus = (req, res) => {
     reservation.cancellationReason = reason ? reason.trim() : "";
   }
 
-  reservation.updatedAt = new Date().toISOString();
+  await reservation.save();
+  await reservation.populate("table");
 
   res.json({
     success: true,
     message: `Reservation marked as ${status}`,
-    data: withTableDetails(reservation),
+    data: reservation,
   });
 };
 
 // PATCH /api/reservations/:id/cancel   (Customer)
 // Body: { "reason": "optional" }
 // Customers can only cancel their OWN Pending/Confirmed bookings that have not started.
-const cancelReservation = (req, res) => {
+const cancelReservation = async (req, res) => {
   // 1. Find the reservation
-  const reservation = reservations.find((r) => r._id === req.params.id);
+  const reservation = await Reservation.findById(req.params.id);
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
 
   // 2. It must belong to the logged-in customer
-  if (reservation.customer !== req.user._id) {
+  if (!reservation.customer || !reservation.customer.equals(req.user._id)) {
     return res.status(403).json({
       success: false,
       message: "You can only cancel your own reservations",
@@ -589,9 +592,10 @@ const cancelReservation = (req, res) => {
   reservation.status = "Cancelled";
   reservation.cancelledBy = "customer";
   reservation.cancellationReason = reason ? reason.trim() : "";
-  reservation.updatedAt = new Date().toISOString();
+  await reservation.save();
+  await reservation.populate("table");
 
-  res.json({ success: true, message: "Reservation cancelled", data: withTableDetails(reservation) });
+  res.json({ success: true, message: "Reservation cancelled", data: reservation });
 };
 
 module.exports = {

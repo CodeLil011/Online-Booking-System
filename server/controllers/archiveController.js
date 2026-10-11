@@ -4,64 +4,58 @@
 //   User accounts: deactivated accounts only (Admin only)
 // Archiving does NOT delete anything: it only sets archived = true, so it can be undone.
 
-const reservations = require("../data/reservations");
-const tables = require("../data/tables");
-const users = require("../data/users");
+const mongoose = require("mongoose");
+const Reservation = require("../models/Reservation");
+const User = require("../models/User");
 const { toPublicUser } = require("../utils/authUtils");
+const { escapeRegex } = require("../utils/validators");
 
 // Only finished reservations can be archived (active ones still need work from staff)
 const FINAL_STATUSES = ["Completed", "Cancelled"];
 
 // ---------- Helper functions ----------
 
-// The NAME of the staff/admin who archived a record
-const getArchivedByName = (record) => {
-  const archivedByUser = users.find((u) => u._id === record.archivedBy);
-  return archivedByUser ? archivedByUser.fullName : null;
-};
-
-// Adds table details and who archived it
-const withArchiveDetails = (reservation) => ({
-  ...reservation,
-  table: tables.find((t) => t._id === reservation.table) || null,
-  archivedByName: getArchivedByName(reservation),
+// Adds the NAME of the staff/admin who archived a record.
+// (populate("archivedBy", "fullName") loaded that person's name.)
+const withArchivedByName = (record, data) => ({
+  ...data,
+  archivedBy: record.archivedBy ? record.archivedBy._id : null,
+  archivedByName: record.archivedBy ? record.archivedBy.fullName : null,
 });
 
-// Removes the password hash and adds who archived it
-const toArchivedUser = (user) => ({
-  ...toPublicUser(user),
-  archivedByName: getArchivedByName(user),
-});
+const toArchivedReservation = (r) => withArchivedByName(r, r.toJSON());
+const toArchivedUser = (u) => withArchivedByName(u, toPublicUser(u));
 
 // ========== RESERVATIONS ==========
 
 // GET /api/archive/reservations
 // Optional: ?search=carlo (name, email, phone, or reference number)
-const getArchivedReservations = (req, res) => {
+const getArchivedReservations = async (req, res) => {
   const { search } = req.query;
 
-  let result = reservations.filter((r) => r.archived);
+  const filter = { archived: true };
   if (search) {
-    const text = search.trim().toLowerCase();
-    result = result.filter(
-      (r) =>
-        r.customerName.toLowerCase().includes(text) ||
-        r.customerEmail.includes(text) ||
-        r.customerPhone.includes(text) ||
-        r._id.toLowerCase() === text
-    );
+    const text = search.trim();
+    const contains = { $regex: escapeRegex(text), $options: "i" };
+    filter.$or = [{ customerName: contains }, { customerEmail: contains }, { customerPhone: contains }];
+
+    // A full reference number (the reservation's MongoDB id) also matches
+    if (mongoose.isValidObjectId(text)) filter.$or.push({ _id: text });
   }
 
   // Most recently archived first
-  const sorted = [...result].sort((a, b) => b.archivedAt.localeCompare(a.archivedAt));
+  const records = await Reservation.find(filter)
+    .sort({ archivedAt: -1 })
+    .populate("table")
+    .populate("archivedBy", "fullName");
 
-  res.json({ success: true, count: sorted.length, data: sorted.map(withArchiveDetails) });
+  res.json({ success: true, count: records.length, data: records.map(toArchivedReservation) });
 };
 
 // PATCH /api/archive/reservations/:id/archive
 // Moves a Completed or Cancelled reservation into the archive
-const archiveReservation = (req, res) => {
-  const reservation = reservations.find((r) => r._id === req.params.id);
+const archiveReservation = async (req, res) => {
+  const reservation = await Reservation.findById(req.params.id);
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
@@ -78,20 +72,22 @@ const archiveReservation = (req, res) => {
   }
 
   reservation.archived = true;
-  reservation.archivedAt = new Date().toISOString();
+  reservation.archivedAt = new Date();
   reservation.archivedBy = req.user._id; // who archived it
+  await reservation.save();
+  await reservation.populate([{ path: "table" }, { path: "archivedBy", select: "fullName" }]);
 
   res.json({
     success: true,
     message: "Reservation archived",
-    data: withArchiveDetails(reservation),
+    data: toArchivedReservation(reservation),
   });
 };
 
 // PATCH /api/archive/reservations/:id/restore
 // Brings an archived reservation back to the main list (its status does not change)
-const restoreReservation = (req, res) => {
-  const reservation = reservations.find((r) => r._id === req.params.id);
+const restoreReservation = async (req, res) => {
+  const reservation = await Reservation.findById(req.params.id);
   if (!reservation) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
@@ -103,12 +99,13 @@ const restoreReservation = (req, res) => {
   reservation.archived = false;
   reservation.archivedAt = null;
   reservation.archivedBy = null;
-  reservation.updatedAt = new Date().toISOString();
+  await reservation.save();
+  await reservation.populate("table");
 
   res.json({
     success: true,
     message: "Reservation restored",
-    data: withArchiveDetails(reservation),
+    data: toArchivedReservation(reservation),
   });
 };
 
@@ -116,26 +113,26 @@ const restoreReservation = (req, res) => {
 
 // GET /api/archive/users
 // Optional: ?search=paolo (name or email)
-const getArchivedUsers = (req, res) => {
+const getArchivedUsers = async (req, res) => {
   const { search } = req.query;
 
-  let result = users.filter((u) => u.archived);
+  const filter = { archived: true };
   if (search) {
-    const text = search.trim().toLowerCase();
-    result = result.filter(
-      (u) => u.fullName.toLowerCase().includes(text) || u.email.includes(text)
-    );
+    const contains = { $regex: escapeRegex(search.trim()), $options: "i" };
+    filter.$or = [{ fullName: contains }, { email: contains }];
   }
 
-  const sorted = [...result].sort((a, b) => b.archivedAt.localeCompare(a.archivedAt));
+  const records = await User.find(filter)
+    .sort({ archivedAt: -1 })
+    .populate("archivedBy", "fullName");
 
-  res.json({ success: true, count: sorted.length, data: sorted.map(toArchivedUser) });
+  res.json({ success: true, count: records.length, data: records.map(toArchivedUser) });
 };
 
 // PATCH /api/archive/users/:id/archive
 // Moves a DEACTIVATED account into the archive
-const archiveUser = (req, res) => {
-  const user = users.find((u) => u._id === req.params.id);
+const archiveUser = async (req, res) => {
+  const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
@@ -154,16 +151,18 @@ const archiveUser = (req, res) => {
   }
 
   user.archived = true;
-  user.archivedAt = new Date().toISOString();
+  user.archivedAt = new Date();
   user.archivedBy = req.user._id;
+  await user.save();
+  await user.populate("archivedBy", "fullName");
 
   res.json({ success: true, message: "Account archived", data: toArchivedUser(user) });
 };
 
 // PATCH /api/archive/users/:id/restore
 // Brings the account back to Manage Users. It stays INACTIVE until the admin activates it.
-const restoreUser = (req, res) => {
-  const user = users.find((u) => u._id === req.params.id);
+const restoreUser = async (req, res) => {
+  const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
@@ -175,7 +174,7 @@ const restoreUser = (req, res) => {
   user.archived = false;
   user.archivedAt = null;
   user.archivedBy = null;
-  user.updatedAt = new Date().toISOString();
+  await user.save();
 
   res.json({ success: true, message: "Account restored", data: toArchivedUser(user) });
 };

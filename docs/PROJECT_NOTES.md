@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–28 ✅, next Step 29 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–30 ✅, next Step 31 (cleanup) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -170,53 +170,57 @@ const ALLOWED_STATUS_CHANGES = {
 
 ```
 resto-reservation-system/
+├── .gitignore                      keeps node_modules/, .env, dist/ off GitHub
 ├── docs/
 │   └── PROJECT_NOTES.md            ← this file
 ├── server/                         ← Node.js + Express backend (port 5000)
 │   ├── config/
-│   │   └── businessRules.js        restaurant rules (slots, limits, statuses)
-│   ├── controllers/
-│   │   ├── tableController.js      logic for /api/tables
-│   │   └── reservationController.js logic for /api/reservations
-│   ├── data/                       TEMPORARY in-memory data (→ MongoDB in Phase 9)
-│   │   ├── tables.js               12 tables
-│   │   └── reservations.js         6 sample reservations
+│   │   ├── businessRules.js        restaurant rules (slots, limits, statuses)
+│   │   └── db.js                   connects to MongoDB Atlas
+│   ├── controllers/                THE LOGIC (one file per area)
+│   │   ├── authController.js       register, login, profile, password reset
+│   │   ├── userController.js       Manage Users (Admin)
+│   │   ├── tableController.js      tables
+│   │   ├── reservationController.js bookings, availability, conflict check, status
+│   │   ├── customerController.js   Customers page (view only)
+│   │   └── archiveController.js    archive / restore
+│   ├── data/                       SAMPLE data, used only by seed.js
+│   │   ├── users.js, tables.js, reservations.js
 │   ├── middleware/
+│   │   ├── authMiddleware.js       protect + allowRoles (the "guards")
 │   │   └── errorMiddleware.js      404 handler + error handler
+│   ├── models/                     Mongoose models (shape + rules of each record)
+│   │   ├── User.js, Table.js, Reservation.js
 │   ├── requests/                   REST Client test files (not app code)
-│   │   ├── tables.http
-│   │   ├── reservations.http
-│   │   ├── reservationStatus.http
-│   │   └── reservationEdit.http
-│   ├── routes/
-│   │   ├── tableRoutes.js          URL → controller function
-│   │   └── reservationRoutes.js
+│   ├── routes/                     URL → controller function
+│   │   ├── authRoutes.js, userRoutes.js, tableRoutes.js,
+│   │   ├── reservationRoutes.js, customerRoutes.js, archiveRoutes.js
 │   ├── utils/
-│   │   └── dateUtils.js            date/time helpers
-│   ├── .env                        PORT=5000
-│   ├── package.json
+│   │   ├── authUtils.js            create login token, hide private fields
+│   │   ├── dateUtils.js            date/time helpers
+│   │   ├── emailService.js         "sends" reset emails (printed in the terminal)
+│   │   └── validators.js           shared rules: email, phone, password, search text
+│   ├── .env                        secrets: JWT_SECRET, MONGO_URI (NOT on GitHub)
+│   ├── .env.example                the same settings with fake values (on GitHub)
+│   ├── package.json                scripts: dev, start, seed
+│   ├── seed.js                     npm run seed → resets the database to the sample data
 │   └── server.js                   entry point
 └── client/                         ← React frontend made with Vite (port 5173)
     ├── src/
-    │   ├── components/
-    │   │   ├── Navbar.jsx          top bar: logo, section links, profile icon
-    │   │   ├── Footer.jsx          disclaimer + temporary dashboard link
-    │   │   └── Sidebar.jsx         dashboard menu
-    │   ├── layouts/
-    │   │   ├── PublicLayout.jsx    Navbar + page + Footer
-    │   │   └── DashboardLayout.jsx Sidebar + page
-    │   ├── pages/
-    │   │   ├── HomePage.jsx        scrolling page (home, about, menu, book, location)
-    │   │   ├── LoginPage.jsx, RegisterPage.jsx, MyReservationsPage.jsx,
-    │   │   │   ProfilePage.jsx, NotFoundPage.jsx
-    │   │   └── dashboard/
-    │   │       ├── DashboardHomePage.jsx, ManageReservationsPage.jsx,
-    │   │       ├── ManageTablesPage.jsx, CustomersPage.jsx,
-    │   │       └── ManageUsersPage.jsx, ArchivePage.jsx
+    │   ├── api/                    one file per backend area (apiClient adds the token)
+    │   ├── components/             Navbar, Footer, Sidebar, ProtectedRoute, Modal,
+    │   │                           PasswordInput, BookingForm, ReservationForm,
+    │   │                           UserForm, TableForm
+    │   ├── context/AuthContext.jsx who is logged in (shared by all pages)
+    │   ├── layouts/                PublicLayout (Navbar+Footer), DashboardLayout (Sidebar)
+    │   ├── pages/                  HomePage, Login, Register, Forgot/Reset Password,
+    │   │   │                       MyReservations, Profile, NotFound
+    │   │   └── dashboard/          Overview, Reservations, Tables, Customers, Users, Archive
+    │   ├── utils/                  dateHelpers.js, formatRef.js
     │   ├── config.js               restaurant name (one place)
     │   ├── App.jsx                 list of routes (URL → page)
-    │   ├── index.css               layout + color variables
-    │   └── main.jsx                starts React inside <BrowserRouter>
+    │   ├── index.css               all styles + color variables
+    │   └── main.jsx                starts React inside <BrowserRouter> and <AuthProvider>
     ├── index.html
     └── package.json
 ```
@@ -226,7 +230,10 @@ resto-reservation-system/
 |---|---|---|
 | `express` | server | Web framework that receives requests and sends responses |
 | `cors` | server | Lets the React app (port 5173) call the API (port 5000) |
-| `dotenv` | server | Reads settings (port, later database URL and secrets) from `.env` |
+| `dotenv` | server | Reads settings (port, database URL, secrets) from `.env` |
+| `bcryptjs` | server | Hashes passwords (Step 11) |
+| `jsonwebtoken` | server | Creates and checks login tokens (Step 11) |
+| `mongoose` | server | Talks to MongoDB with schemas and simple commands (Step 27) |
 | `nodemon` (dev only) | server | Restarts the server automatically when a file is saved |
 | `react`, `react-dom`, `vite` | client | Installed by the Vite React template |
 | `react-router` | client | Multiple pages with their own URLs, without page reloads (installed as v8) |
@@ -256,7 +263,7 @@ routes/              → matches URL + method to a controller function
 controllers/         → THE LOGIC: read input, validate, check rules,
       │                change data, send response
       ▼
-data/                → temporary arrays in memory (MongoDB in Phase 9)
+models/ + MongoDB    → Mongoose models read and save the data in MongoDB Atlas
       │
       ▼
 JSON response        → { success, message, count, data } or { success: false, message, errors }
@@ -265,22 +272,18 @@ JSON response        → { success, message, count, data } or { success: false, 
 If no route matches, the `notFound` middleware returns a 404 JSON message. If code throws an error, `errorHandler` returns a clean JSON error instead of crashing.
 
 ### Why the layers matter
-Only the **controllers** touch the data. In Phase 9 we replace `data/*.js` with Mongoose models and change a few lines in the controllers; routes, `server.js`, and React stay the same.
+Only the **controllers** touch the data. That's why switching from in-memory arrays to MongoDB (Phase 9) only changed the controllers: routes and React stayed the same.
 
-### Where the data lives right now (important)
+### Where the data lives (since Phase 9)
 ```
-data/reservations.js (file on disk)
-        │  read ONCE when the server starts
-        ▼
-reservations array (in RAM)  ◄── all bookings, edits, cancellations happen here
-        │
-        ▼
-Server restarts → RAM is wiped → array is read again from the file
+React page ──► API (Express) ──► controller ──► Mongoose model ──► MongoDB Atlas (cloud)
+                                                                    users / tables / reservations
 ```
-That is why:
-- the file never changes when we test requests;
-- saving any backend file (nodemon restart) resets the data;
-- we **need MongoDB**, because a real system must remember changes.
+- Data is **permanent**: restarting the server (`rs`, saving a file) changes nothing.
+- `npm run seed` is the only thing that resets it (deletes everything, loads `data/*.js` again).
+- The database is **shared** by the whole group, so a seed resets it for everyone.
+
+**Before Phase 9 (Steps 1–26)** the data lived in arrays in memory, loaded from `data/*.js` when the server started. Every restart wiped all changes. That's why we moved to MongoDB.
 
 ---
 
@@ -1069,6 +1072,59 @@ Phone/walk-in bookings (`customer: null`) aren't linked to an account, so they d
 
 **Presentation line:**
 > "Each kind of record has a Mongoose model that defines its fields and rules, such as required fields, allowed status values, and unique emails and table numbers. A reservation doesn't copy the customer or the table; it stores their IDs as references. A seed script resets the database to known sample data with one command, which we use before testing and before the demo."
+
+---
+
+### STEP 29: Login, users and tables use MongoDB
+**Goal:** Make accounts and tables permanent.
+
+**What we did** (6 files, full replacements)
+- `authController.js`, `userController.js`, `tableController.js`: arrays replaced by the models. Same rules and messages as before.
+- `authMiddleware.js` (`protect`): loads the user with `User.findById()`. Old tokens with ids like `"u3"` are rejected (401), so the website logs you out once.
+- `authUtils.js`: `toPublicUser(user)` is now `user.toJSON()` (the model removes the password hash).
+- `errorMiddleware.js`: MongoDB errors become clear answers: invalid ID → **400**, schema rule broken → **400**, duplicate unique value → **409**.
+- `authController.js` now uses the shared rules in `utils/validators.js` instead of its own copy.
+
+**The pattern (same in every controller)**
+| Before (array) | Now (MongoDB) |
+|---|---|
+| `users.find((u) => u.email === email)` | `await User.findOne({ email })` |
+| `users.push(newUser)` | `await User.create({...})` |
+| change a field (done) | change a field, then `await user.save()` |
+| `a._id !== b._id` | `!a._id.equals(b._id)` (ids are objects) |
+| `(req, res) =>` | `async (req, res) =>` + `await` |
+| `_id: "u" + Date.now()` | removed: MongoDB creates the `_id` |
+
+MongoDB words used: `$gte` (≥), `$ne` (not equal), `$gt` (>), `$or` (either condition), `$regex` + `"i"` (contains, any case), `exists()`, `countDocuments()`.
+
+**Search safety:** `escapeRegex()` makes typed search text safe, because characters like `.` and `+` mean something special in a regex search.
+
+**Mistake we hit:** the new authController code was pasted into `archiveController.js`, so `archiveRoutes.js` received `undefined` and the server crashed with `TypeError: argument handler must be a function`. Fixed with `git checkout -- controllers/archiveController.js` (restores the last committed version) and pasting into the right file. Lesson: check the **tab name** before pasting.
+
+**Presentation line:**
+> "Accounts and tables are stored in MongoDB, so they survive restarts. Every rule stayed the same; only the storage changed. For example, finding a user by email is now a database query, and any change has to be saved with save(). The login guard looks the user up in the database on every request, so a deactivated account is blocked immediately."
+
+---
+
+### STEP 30: Reservations, Customers and Archive use MongoDB
+**Goal:** Make the core transaction permanent. After this step, the whole system runs on MongoDB.
+
+**What we did** (4 files, full replacements)
+- `reservationController.js`:
+  - **Conflict check:** `Reservation.exists({ table, date, time, status: { $in: ["Pending","Confirmed"] } })`
+  - **Free tables:** `Reservation.distinct("table", …)` gets the booked table ids, then `Table.find({ status: "available", capacity: { $gte: guests }, _id: { $nin: bookedIds } }).sort({ capacity: 1, tableNumber: 1 })` (smallest first)
+  - **`populate("table")`** replaces the table id with the full table in every answer (replaces our old `withTableDetails`)
+  - **Slots:** the 5 time slots are checked at the same time with `Promise.all`
+- `customerController.js`: one query for all customers' reservations, then the summary per customer.
+- `archiveController.js`: `populate("archivedBy", "fullName")` gives the "archived by" name.
+- `utils/validators.js`: added the shared `escapeRegex`.
+
+**New MongoDB words:** `$in` (is one of), `$nin` (is NOT one of), `distinct` (list of unique values), `populate` (follow a reference).
+
+**Testing note:** in **Edit** mode, changing guests so the current table no longer fits clears the table, and the form asks you to **choose one** ("Please select a table"). That's the Step 22 rule: only new bookings auto-assign.
+
+**Presentation line:**
+> "The core booking logic now runs on MongoDB. To find free tables, the system asks the database which tables are already booked in that slot, then finds in-service tables that are big enough and not in that list, smallest first. Because a reservation stores only the table's ID, we use populate to show the table details. Bookings, status changes, cancellations and archive actions are all permanent now."
 
 ---
 

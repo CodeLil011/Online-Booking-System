@@ -19,4 +19,8 @@ const validatePassword = (password) => {
   return null;
 };
 
-module.exports = { EMAIL_PATTERN, PH_MOBILE_PATTERN, validatePassword };
+// Makes typed search text safe to use inside a MongoDB "contains" search
+// (characters like "." or "+" have special meanings there)
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+module.exports = { EMAIL_PATTERN, PH_MOBILE_PATTERN, validatePassword, escapeRegex };

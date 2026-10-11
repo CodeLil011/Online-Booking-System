@@ -2,24 +2,20 @@
 // Staff/Admin: VIEW customer accounts and their booking history (read-only).
 // Separate from /api/users because that one is Admin-only and can EDIT accounts.
 
-const users = require("../data/users");
-const reservations = require("../data/reservations");
-const tables = require("../data/tables");
+const User = require("../models/User");
+const Reservation = require("../models/Reservation");
 const { ACTIVE_STATUSES } = require("../config/businessRules");
 const { getToday } = require("../utils/dateUtils");
 const { toPublicUser } = require("../utils/authUtils");
+const { escapeRegex } = require("../utils/validators");
 
 const STATUSES = ["active", "inactive"];
 
 // ---------- Helper functions ----------
 
-// All reservations made by one customer ACCOUNT (walk-in/phone bookings have customer: null)
-const getCustomerReservations = (customerId) =>
-  reservations.filter((r) => r.customer === customerId);
-
-// Booking numbers for one customer: total, completed, cancelled, upcoming, last visit
-const getBookingSummary = (customerId) => {
-  const list = getCustomerReservations(customerId);
+// Booking numbers for ONE customer, from their list of reservations:
+// total, completed, cancelled, upcoming, last visit
+const getBookingSummary = (list) => {
   const today = getToday();
 
   // Last visit = the latest date among their COMPLETED reservations
@@ -41,7 +37,7 @@ const getBookingSummary = (customerId) => {
 
 // GET /api/customers
 // Optional filters: ?search=maria (name, email, or phone)  ?status=active
-const getCustomers = (req, res) => {
+const getCustomers = async (req, res) => {
   const { search, status } = req.query;
 
   if (status && !STATUSES.includes(status)) {
@@ -52,43 +48,50 @@ const getCustomers = (req, res) => {
   }
 
   // Customer accounts only (archived accounts are hidden)
-  let result = users.filter((u) => u.role === "customer" && !u.archived);
-  if (status) result = result.filter((u) => u.status === status);
+  const filter = { role: "customer", archived: { $ne: true } };
+  if (status) filter.status = status;
   if (search) {
-    const text = search.trim().toLowerCase();
-    result = result.filter(
-      (u) =>
-        u.fullName.toLowerCase().includes(text) ||
-        u.email.includes(text) ||
-        u.phone.includes(text)
-    );
+    const text = escapeRegex(search.trim());
+    filter.$or = [
+      { fullName: { $regex: text, $options: "i" } },
+      { email: { $regex: text, $options: "i" } },
+      { phone: { $regex: text } },
+    ];
   }
 
-  const data = [...result]
-    .sort((a, b) => a.fullName.localeCompare(b.fullName))
-    .map((u) => ({ ...toPublicUser(u), bookings: getBookingSummary(u._id) }));
+  const customers = await User.find(filter).sort({ fullName: 1 });
+
+  // ONE query for the reservations of ALL these customers (faster than one query each)
+  const reservations = await Reservation.find({
+    customer: { $in: customers.map((c) => c._id) },
+  });
+
+  const data = customers.map((c) => ({
+    ...toPublicUser(c),
+    bookings: getBookingSummary(reservations.filter((r) => r.customer.equals(c._id))),
+  }));
 
   res.json({ success: true, count: data.length, data });
 };
 
 // GET /api/customers/:id
 // One customer + their full booking history (newest first)
-const getCustomerById = (req, res) => {
-  const customer = users.find((u) => u._id === req.params.id && u.role === "customer");
+const getCustomerById = async (req, res) => {
+  const customer = await User.findOne({ _id: req.params.id, role: "customer" });
 
   if (!customer) {
     return res.status(404).json({ success: false, message: "Customer not found" });
   }
 
-  const history = getCustomerReservations(customer._id)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time))
-    .map((r) => ({ ...r, table: tables.find((t) => t._id === r.table) || null }));
+  const history = await Reservation.find({ customer: customer._id })
+    .sort({ date: -1, time: -1 })
+    .populate("table");
 
   res.json({
     success: true,
     data: {
       ...toPublicUser(customer),
-      bookings: getBookingSummary(customer._id),
+      bookings: getBookingSummary(history),
       reservations: history,
     },
   });
