@@ -12,6 +12,7 @@ import {
   restoreUser,
 } from "../../api/archiveApi";
 import { formatDate, formatTime } from "../../utils/dateHelpers";
+import { formatRef } from "../../utils/formatRef";
 
 // "2026-10-01T09:00:00.000Z" -> "Oct 1, 2026"
 const shortDate = (isoDate) =>
@@ -83,7 +84,7 @@ function ArchivedReservations() {
   }, [search, refreshKey]);
 
   const handleRestore = async (r) => {
-    if (!window.confirm(`Restore ${r.customerName}'s reservation (${r._id}) to the main list?`)) {
+    if (!window.confirm(`Restore ${r.customerName}'s reservation (${formatRef(r._id)}) to the main list?`)) {
       return;
     }
 
@@ -142,7 +143,7 @@ function ArchivedReservations() {
                   <td>
                     {formatDate(r.date)}
                     <span className="cell-sub">
-                      {formatTime(r.time)} · Ref {r._id}
+                      {formatTime(r.time)} · Ref {formatRef(r._id)}
                     </span>
                   </td>
                   <td>

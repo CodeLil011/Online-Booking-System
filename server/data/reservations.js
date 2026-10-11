@@ -1,10 +1,10 @@
 // data/reservations.js
-// TEMPORARY in-memory reservations (replaced by MongoDB in Phase 9).
+// SAMPLE reservations. Used ONLY by seed.js (npm run seed) to fill MongoDB.
 //
-// "table"    = _id of a table from data/tables.js
-// "customer" = _id of the customer ACCOUNT that made the booking (data/users.js),
-//              or null when staff entered it for someone without an account
-//              (phone or walk-in booking).
+// "table"    = short sample id of a table from data/tables.js
+// "customer" = short sample id of the customer ACCOUNT (data/users.js),
+//              or null for phone/walk-in bookings entered by staff.
+// seed.js swaps these short ids for the real MongoDB ids.
 
 const reservations = [
   {

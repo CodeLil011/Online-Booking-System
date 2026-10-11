@@ -1,5 +1,5 @@
 // data/users.js
-// TEMPORARY in-memory users (replaced by MongoDB in Phase 9).
+// SAMPLE users. Used ONLY by seed.js (npm run seed) to fill MongoDB.
 //
 // Passwords are NEVER stored as plain text. bcrypt.hashSync() turns each
 // development password into a hash when this file loads.

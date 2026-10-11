@@ -29,7 +29,7 @@ const toArchivedUser = (u) => withArchivedByName(u, toPublicUser(u));
 // ========== RESERVATIONS ==========
 
 // GET /api/archive/reservations
-// Optional: ?search=carlo (name, email, phone, or reference number)
+// Optional: ?search=carlo (name, email, phone, or reference number like #EA7886)
 const getArchivedReservations = async (req, res) => {
   const { search } = req.query;
 
@@ -41,6 +41,17 @@ const getArchivedReservations = async (req, res) => {
 
     // A full reference number (the reservation's MongoDB id) also matches
     if (mongoose.isValidObjectId(text)) filter.$or.push({ _id: text });
+
+    // A SHORT reference like "#EA7886" matches the LAST 6 characters of the id
+    const shortRef = text.replace(/^#/, "");
+    if (/^[0-9a-f]{6}$/i.test(shortRef)) {
+      filter.$or.push({
+        $expr: {
+          $regexMatch: { input: { $toString: "$_id" }, regex: shortRef + "$", options: "i" },
+        },
+      });
+    }
+
   }
 
   // Most recently archived first

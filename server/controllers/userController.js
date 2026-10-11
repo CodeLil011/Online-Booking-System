@@ -5,7 +5,12 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { toPublicUser } = require("../utils/authUtils");
-const { EMAIL_PATTERN, PH_MOBILE_PATTERN, validatePassword } = require("../utils/validators");
+const {
+  EMAIL_PATTERN,
+  PH_MOBILE_PATTERN,
+  validatePassword,
+  escapeRegex,
+} = require("../utils/validators");
 
 const SALT_ROUNDS = 10;
 const ROLES = ["admin", "staff", "customer"];
@@ -16,10 +21,6 @@ const EDITABLE_FIELDS = ["fullName", "email", "phone", "role", "status"];
 
 // Finds a user by email (not case-sensitive, because emails are saved in lowercase)
 const findUserByEmail = (email) => User.findOne({ email: email.trim().toLowerCase() });
-
-// Makes typed search text safe to use inside a MongoDB "contains" search
-// (characters like "." or "+" have special meanings there)
-const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Checks user fields. Returns a list of error messages.
 // isUpdate = true -> only check the fields that were sent

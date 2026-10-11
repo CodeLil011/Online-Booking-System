@@ -12,6 +12,7 @@ import {
 } from "../../api/reservationApi";
 import { archiveReservation } from "../../api/archiveApi";
 import { formatDate, formatTime, getTodayString, getNowString } from "../../utils/dateHelpers";
+import { formatRef } from "../../utils/formatRef";
 import Modal from "../../components/Modal";
 import ReservationForm from "../../components/ReservationForm";
 
@@ -70,7 +71,7 @@ function ManageReservationsPage() {
         r.customerName.toLowerCase().includes(text) ||
         r.customerEmail.includes(text) ||
         r.customerPhone.includes(text) ||
-        r._id.toLowerCase() === text
+          formatRef(r._id).toLowerCase() === `#${text.replace(/^#/, "")}`
     );
 
   // The backend sorts oldest first; for "Past", show the most recent first
@@ -89,7 +90,7 @@ function ManageReservationsPage() {
     setBusyId(r._id);
     try {
       await changeReservationStatus(r._id, status);
-      setMessage(`${r.customerName}'s reservation (${r._id}) is now ${status}.`);
+      setMessage(`${r.customerName}'s reservation (${formatRef(r._id)}) is now ${status}.`);
       reload();
     } catch (err) {
       setError(err.message);
@@ -166,7 +167,7 @@ function ManageReservationsPage() {
       );
     } else {
       const updated = await updateReservation(formModal.reservation._id, data);
-      setMessage(`Reservation ${updated._id} (${updated.customerName}) was updated.`);
+      setMessage(`Reservation ${formatRef(updated._id)} (${updated.customerName}) was updated.`);
     }
 
     setError("");
@@ -328,7 +329,7 @@ function ManageReservationsPage() {
                   <td>
                     {formatDate(r.date)}
                     <span className="cell-sub">
-                      {formatTime(r.time)} · Ref {r._id}
+                      {formatTime(r.time)} · Ref {formatRef(r._id)}
                     </span>
                   </td>
                   <td>
@@ -403,7 +404,7 @@ function ManageReservationsPage() {
           title={
             formModal.mode === "add"
               ? "New Booking (phone / walk-in)"
-              : `Edit Reservation (${formModal.reservation._id})`
+              : `Edit Reservation (${formatRef(formModal.reservation._id)}	)`
           }
           onClose={() => setFormModal(null)}
         >

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { getMyReservations, cancelMyReservation } from "../api/reservationApi";
 import { formatDate, formatTime, getNowString } from "../utils/dateHelpers";
+import { formatRef } from "../utils/formatRef";
 import Modal from "../components/Modal";
 
 const ACTIVE_STATUSES = ["Pending", "Confirmed"];
@@ -175,7 +176,7 @@ function MyReservationsPage() {
               </dl>
 
               <p className="muted reservation-meta">
-                Ref: {r._id} · Booked on {formatBookedOn(r.createdAt)}
+                Ref: {formatRef(r._id)} · Booked on {formatBookedOn(r.createdAt)}
               </p>
               <p className="reservation-status-text">{STATUS_MESSAGES[r.status]}</p>
 

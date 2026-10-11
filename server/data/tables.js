@@ -1,3 +1,6 @@
+// data/tables.js
+// SAMPLE tables. Used ONLY by seed.js (npm run seed) to fill MongoDB.
+
 const tables = [
   { _id: "t1", tableNumber: 1, capacity: 2, location: "Window Side", status: "available" },
   { _id: "t2", tableNumber: 2, capacity: 2, location: "Window Side", status: "available" },
