@@ -4,10 +4,11 @@
 //   allowRoles  -> does the user have the right role?
 
 const jwt = require("jsonwebtoken");
-const users = require("../data/users");
+const mongoose = require("mongoose");
+const User = require("../models/User");
 
 // GUARD 1: "Who are you? Show a valid token."
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   // 1. Read the token from the header: "Authorization: Bearer eyJhbGci..."
   const header = req.headers.authorization || "";
 
@@ -30,8 +31,9 @@ const protect = (req, res, next) => {
   }
 
   // 3. The account must still exist and be active
-  //    (e.g. the Admin may have deactivated it after the token was given)
-  const user = users.find((u) => u._id === payload.id);
+  //    (e.g. the Admin may have deactivated it after the token was given).
+  //    Old tokens from before MongoDB have ids like "u3", which are not valid MongoDB ids.
+  const user = mongoose.isValidObjectId(payload.id) ? await User.findById(payload.id) : null;
 
   if (!user || user.status !== "active") {
     return res.status(401).json({

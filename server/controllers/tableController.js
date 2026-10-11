@@ -1,8 +1,8 @@
 // controllers/tableController.js
-// Logic for the /api/tables endpoints.
+// Logic for the /api/tables endpoints (now saved in MongoDB).
 // Each function receives the request (req) and sends back a response (res).
 
-const tables = require("../data/tables");
+const Table = require("../models/Table");
 
 const ALLOWED_STATUSES = ["available", "unavailable"];
 
@@ -39,15 +39,15 @@ const validateTable = (data, isUpdate = false) => {
 };
 
 // GET /api/tables
-// Returns all tables. Optional filters in the URL:
+// Returns all tables (sorted by table number). Optional filters in the URL:
 //   ?status=available     -> only tables with that status
 //   ?minCapacity=4        -> only tables that seat at least 4 people
-const getAllTables = (req, res) => {
+const getAllTables = async (req, res) => {
   const { status, minCapacity } = req.query;
-  let result = tables;
+  const filter = {}; // MongoDB filter: {} = everything
 
   if (status) {
-    result = result.filter((table) => table.status === status);
+    filter.status = status;
   }
 
   if (minCapacity) {
@@ -61,16 +61,18 @@ const getAllTables = (req, res) => {
       });
     }
 
-    result = result.filter((table) => table.capacity >= min);
+    filter.capacity = { $gte: min }; // $gte = "greater than or equal"
   }
 
-  res.json({ success: true, count: result.length, data: result });
+  const tables = await Table.find(filter).sort({ tableNumber: 1 });
+
+  res.json({ success: true, count: tables.length, data: tables });
 };
 
 // GET /api/tables/:id
 // Returns one table by its _id, or 404 if it does not exist.
-const getTableById = (req, res) => {
-  const table = tables.find((t) => t._id === req.params.id);
+const getTableById = async (req, res) => {
+  const table = await Table.findById(req.params.id);
 
   if (!table) {
     return res.status(404).json({ success: false, message: "Table not found" });
@@ -81,7 +83,7 @@ const getTableById = (req, res) => {
 
 // POST /api/tables
 // Creates a new table after validating the data.
-const createTable = (req, res) => {
+const createTable = async (req, res) => {
   const data = req.body || {}; // req.body is undefined if no JSON was sent
 
   // 1. Validate the input
@@ -91,7 +93,7 @@ const createTable = (req, res) => {
   }
 
   // 2. Table numbers must be unique
-  const duplicate = tables.some((t) => t.tableNumber === data.tableNumber);
+  const duplicate = await Table.exists({ tableNumber: data.tableNumber });
   if (duplicate) {
     return res.status(409).json({
       success: false,
@@ -99,26 +101,24 @@ const createTable = (req, res) => {
     });
   }
 
-  // 3. Build the new table using ONLY the allowed fields
-  //    (extra fields sent by the client are ignored)
-  const newTable = {
-    _id: `t${Date.now()}`, // temporary unique ID; MongoDB will generate _id later
+  // 3. Save the new table using ONLY the allowed fields
+  //    (extra fields sent by the client are ignored). MongoDB creates the _id.
+  const newTable = await Table.create({
     tableNumber: data.tableNumber,
     capacity: data.capacity,
     location: data.location.trim(),
     status: data.status || "available",
-  };
+  });
 
-  // 4. Save it and return it with status 201 (Created)
-  tables.push(newTable);
+  // 4. Return it with status 201 (Created)
   res.status(201).json({ success: true, message: "Table created", data: newTable });
 };
 
 // PUT /api/tables/:id
 // Updates only the fields that were sent (e.g. just the status).
-const updateTable = (req, res) => {
+const updateTable = async (req, res) => {
   // 1. Find the table
-  const table = tables.find((t) => t._id === req.params.id);
+  const table = await Table.findById(req.params.id);
   if (!table) {
     return res.status(404).json({ success: false, message: "Table not found" });
   }
@@ -131,11 +131,12 @@ const updateTable = (req, res) => {
     return res.status(400).json({ success: false, message: "Validation failed", errors });
   }
 
-  // 3. If the table number is changing, it must not belong to another table
+  // 3. If the table number is changing, it must not belong to ANOTHER table
   if (data.tableNumber !== undefined) {
-    const duplicate = tables.some(
-      (t) => t.tableNumber === data.tableNumber && t._id !== table._id
-    );
+    const duplicate = await Table.exists({
+      tableNumber: data.tableNumber,
+      _id: { $ne: table._id }, // $ne = "not equal": ignore this table itself
+    });
     if (duplicate) {
       return res.status(409).json({
         success: false,
@@ -144,11 +145,12 @@ const updateTable = (req, res) => {
     }
   }
 
-  // 4. Apply the changes (only fields that were sent)
+  // 4. Apply the changes (only fields that were sent) and save to MongoDB
   if (data.tableNumber !== undefined) table.tableNumber = data.tableNumber;
   if (data.capacity !== undefined) table.capacity = data.capacity;
   if (data.location !== undefined) table.location = data.location.trim();
   if (data.status !== undefined) table.status = data.status;
+  await table.save();
 
   res.json({ success: true, message: "Table updated", data: table });
 };

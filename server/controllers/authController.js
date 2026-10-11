@@ -1,45 +1,31 @@
 // controllers/authController.js
 // Logic for /api/auth: registering customers, logging in (all roles),
 // managing the logged-in user's own account, and password recovery.
+// Users are now saved in MongoDB (models/User.js).
 
 const crypto = require("crypto"); // built into Node.js
 const bcrypt = require("bcryptjs");
-const users = require("../data/users");
+const User = require("../models/User");
 const { generateToken, toPublicUser } = require("../utils/authUtils");
 const { sendPasswordResetEmail } = require("../utils/emailService");
+const { EMAIL_PATTERN, PH_MOBILE_PATTERN, validatePassword } = require("../utils/validators");
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_MINUTES = 15; // how long a password reset link works
 
-// Simple patterns for checking text input
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PH_MOBILE_PATTERN = /^(09|\+639)\d{9}$/; // 09171234567 or +639171234567
-
-// Password rule: at least 8 characters, with at least one letter and one number.
-// Returns an error message, or null if OK.
-const validatePassword = (password) => {
-  if (typeof password !== "string" || password.length < 8) {
-    return "password must be at least 8 characters";
-  }
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-    return "password must contain at least one letter and one number";
-  }
-  return null;
-};
-
-// Finds a user by email (not case-sensitive)
-const findUserByEmail = (email) =>
-  users.find((u) => u.email === email.trim().toLowerCase());
+// Finds a user by email (not case-sensitive, because emails are saved in lowercase)
+const findUserByEmail = (email) => User.findOne({ email: email.trim().toLowerCase() });
 
 // Turns a reset token into a SHA-256 hash. Like passwords, we store only
 // the hash, so a leaked user list cannot be used to reset passwords.
 const hashResetToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 
 // Finds the user whose saved reset-token hash matches AND hasn't expired
-const findUserByResetToken = (token) => {
-  const tokenHash = hashResetToken(token);
-  return users.find((u) => u.resetTokenHash === tokenHash && u.resetTokenExpires > Date.now());
-};
+const findUserByResetToken = (token) =>
+  User.findOne({
+    resetTokenHash: hashResetToken(token),
+    resetTokenExpires: { $gt: new Date() }, // $gt = "greater than" (still in the future)
+  });
 
 // POST /api/auth/register
 // Creates a CUSTOMER account and logs them in right away (returns a token).
@@ -66,7 +52,7 @@ const register = async (req, res) => {
   }
 
   // 2. Email must not be used by another account
-  if (findUserByEmail(email)) {
+  if (await findUserByEmail(email)) {
     return res.status(409).json({
       success: false,
       message: "An account with this email already exists",
@@ -76,20 +62,16 @@ const register = async (req, res) => {
   // 3. Hash the password (NEVER store the plain password)
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  // 4. Create the user. Role is ALWAYS "customer" here, even if the
+  // 4. Create the user in MongoDB. Role is ALWAYS "customer" here, even if the
   //    request tries to send "role": "admin". Staff are created by the Admin.
-  const newUser = {
-    _id: `u${Date.now()}`, // temporary unique ID; MongoDB will generate _id later
+  const newUser = await User.create({
     fullName: fullName.trim(),
     email: email.trim().toLowerCase(),
     phone,
     passwordHash,
     role: "customer",
     status: "active",
-    createdAt: new Date().toISOString(),
-  };
-
-  users.push(newUser);
+  });
 
   // 5. Return a token so the customer is logged in immediately
   res.status(201).json({
@@ -116,7 +98,7 @@ const login = async (req, res) => {
   // 2. Find the user and compare the password with the stored hash.
   //    Wrong email and wrong password give the SAME message, so attackers
   //    cannot find out which emails have accounts.
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false;
 
   if (!user || !passwordMatches) {
@@ -148,7 +130,7 @@ const getMe = (req, res) => {
 
 // PUT /api/auth/me   (logged in)
 // Edit MY OWN name, email, or phone. Role and status can NOT be changed here.
-const updateMe = (req, res) => {
+const updateMe = async (req, res) => {
   const { fullName, email, phone } = req.body || {};
 
   // 1. At least one field must be sent
@@ -174,9 +156,10 @@ const updateMe = (req, res) => {
   }
 
   // 3. A new email must not belong to ANOTHER account
+  //    (MongoDB ids are objects, so we compare them with .equals(), not ===)
   if (email !== undefined) {
-    const owner = findUserByEmail(email);
-    if (owner && owner._id !== req.user._id) {
+    const owner = await findUserByEmail(email);
+    if (owner && !owner._id.equals(req.user._id)) {
       return res.status(409).json({
         success: false,
         message: "An account with this email already exists",
@@ -184,11 +167,11 @@ const updateMe = (req, res) => {
     }
   }
 
-  // 4. Apply the changes to the logged-in user
+  // 4. Apply the changes to the logged-in user and save to MongoDB
   if (fullName !== undefined) req.user.fullName = fullName.trim();
   if (email !== undefined) req.user.email = email.trim().toLowerCase();
   if (phone !== undefined) req.user.phone = phone;
-  req.user.updatedAt = new Date().toISOString();
+  await req.user.save(); // updatedAt is set automatically
 
   res.json({ success: true, message: "Profile updated", user: toPublicUser(req.user) });
 };
@@ -223,7 +206,7 @@ const changePassword = async (req, res) => {
 
   // 3. Save the HASH of the new password
   req.user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-  req.user.updatedAt = new Date().toISOString();
+  await req.user.save();
 
   res.json({ success: true, message: "Password changed successfully" });
 };
@@ -238,7 +221,7 @@ const forgotPassword = async (req, res) => {
     return res.status(400).json({ success: false, message: "Please enter a valid email address" });
   }
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   // Only active accounts get a reset link
   if (user && user.status === "active") {
@@ -247,7 +230,8 @@ const forgotPassword = async (req, res) => {
 
     // 2. Save only its HASH and an expiry time on the user
     user.resetTokenHash = hashResetToken(resetToken);
-    user.resetTokenExpires = Date.now() + RESET_TOKEN_MINUTES * 60 * 1000;
+    user.resetTokenExpires = new Date(Date.now() + RESET_TOKEN_MINUTES * 60 * 1000);
+    await user.save();
 
     // 3. Build the link to the website's reset page and "send" it
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -265,8 +249,8 @@ const forgotPassword = async (req, res) => {
 
 // GET /api/auth/reset-password/:token   (public)
 // Lets the reset page check the link BEFORE showing the form.
-const checkResetToken = (req, res) => {
-  const user = findUserByResetToken(req.params.token);
+const checkResetToken = async (req, res) => {
+  const user = await findUserByResetToken(req.params.token);
 
   if (!user) {
     return res.status(400).json({
@@ -288,7 +272,7 @@ const resetPassword = async (req, res) => {
   }
 
   // 1. Find the user whose saved hash matches this token AND hasn't expired
-  const user = findUserByResetToken(token);
+  const user = await findUserByResetToken(token);
 
   if (!user) {
     return res.status(400).json({
@@ -303,11 +287,11 @@ const resetPassword = async (req, res) => {
     return res.status(400).json({ success: false, message: passwordError });
   }
 
-  // 3. Save the new password HASH and delete the reset token (one-time use)
+  // 3. Save the new password HASH and clear the reset token (one-time use)
   user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-  delete user.resetTokenHash;
-  delete user.resetTokenExpires;
-  user.updatedAt = new Date().toISOString();
+  user.resetTokenHash = null;
+  user.resetTokenExpires = null;
+  await user.save();
 
   res.json({
     success: true,

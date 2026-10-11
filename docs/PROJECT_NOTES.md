@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Step 27 ✅, next Step 28 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–28 ✅, next Step 29 · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -1041,6 +1041,34 @@ Phone/walk-in bookings (`customer: null`) aren't linked to an account, so they d
 
 **Presentation line:**
 > "The backend stores its data in MongoDB Atlas, a cloud database. The connection string contains a password, so it's kept in the .env file and never uploaded to GitHub. When the server starts, it connects to the database first and only then accepts requests; if the connection fails it stops with a clear message instead of running half-broken."
+
+---
+
+### STEP 28: Mongoose models + seed script
+**Goal:** Describe each kind of record for MongoDB and fill the database with the sample data.
+
+**What we did**
+- New folder `server/models/`:
+  - `User.js`: fullName, email (**unique**, lowercase), phone, passwordHash, role (`enum`), status, reset-token fields, archive fields. A **`toJSON` transform** removes `passwordHash` and the reset token whenever a user is sent as JSON.
+  - `Table.js`: tableNumber (**unique**, min 1), capacity (1–20), location, status.
+  - `Reservation.js`: `customer` and `table` are **references** (`ObjectId` + `ref`), plus date, time (`enum` of the 5 seatings), guests (1–10), status (`enum`), cancellation and archive fields. An **index** on `{ table, date, time }` makes the conflict check fast.
+  - All use `timestamps: true` (automatic `createdAt`/`updatedAt`) and `versionKey: false` (no `__v`).
+- New `server/seed.js` + `"seed": "node seed.js"` in `package.json`: **deletes** the 3 collections, then inserts the sample tables, users and reservations. Old IDs like `"t5"` are mapped to the new MongoDB IDs so references stay correct.
+
+**Key ideas**
+| Term | Meaning |
+|---|---|
+| Schema / model | The rules for one kind of record (like a form template). MongoDB itself accepts anything; the model enforces our rules. |
+| Collection | MongoDB's "table": `users`, `tables`, `reservations` |
+| Document | One record in a collection (one user, one booking) |
+| ObjectId | MongoDB's automatic unique ID, e.g. `6aca7110be4a5b660eea7886` |
+| Reference (`ref`) | A reservation stores the table's **ID**, not a copy of the table. `populate()` swaps the ID for the full record when needed. |
+| Seed | Filling a database with starting/sample data |
+
+**Careful:** the database is **shared** (Atlas). `npm run seed` resets it for the whole group, so tell your groupmate before running it.
+
+**Presentation line:**
+> "Each kind of record has a Mongoose model that defines its fields and rules, such as required fields, allowed status values, and unique emails and table numbers. A reservation doesn't copy the customer or the table; it stores their IDs as references. A seed script resets the database to known sample data with one command, which we use before testing and before the demo."
 
 ---
 

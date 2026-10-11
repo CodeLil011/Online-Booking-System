@@ -1,8 +1,9 @@
 // controllers/userController.js
 // Admin-only user management: list, view, add, edit, change role, activate/deactivate.
+// Users are now saved in MongoDB (models/User.js).
 
 const bcrypt = require("bcryptjs");
-const users = require("../data/users");
+const User = require("../models/User");
 const { toPublicUser } = require("../utils/authUtils");
 const { EMAIL_PATTERN, PH_MOBILE_PATTERN, validatePassword } = require("../utils/validators");
 
@@ -13,9 +14,12 @@ const EDITABLE_FIELDS = ["fullName", "email", "phone", "role", "status"];
 
 // ---------- Helper functions ----------
 
-// Finds a user by email (not case-sensitive)
-const findUserByEmail = (email) =>
-  users.find((u) => u.email === email.trim().toLowerCase());
+// Finds a user by email (not case-sensitive, because emails are saved in lowercase)
+const findUserByEmail = (email) => User.findOne({ email: email.trim().toLowerCase() });
+
+// Makes typed search text safe to use inside a MongoDB "contains" search
+// (characters like "." or "+" have special meanings there)
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Checks user fields. Returns a list of error messages.
 // isUpdate = true -> only check the fields that were sent
@@ -51,14 +55,13 @@ const validateUserData = (data, isUpdate = false) => {
 };
 
 // How many ACTIVE admins exist (at least one must always remain)
-const countActiveAdmins = () =>
-  users.filter((u) => u.role === "admin" && u.status === "active").length;
+const countActiveAdmins = () => User.countDocuments({ role: "admin", status: "active" });
 
 // ---------- Controller functions ----------
 
 // GET /api/users
 // Optional filters: ?role=staff  ?status=inactive  ?search=santos (name or email)
-const getAllUsers = (req, res) => {
+const getAllUsers = async (req, res) => {
   const { role, status, search } = req.query;
 
   if (role && !ROLES.includes(role)) {
@@ -74,29 +77,34 @@ const getAllUsers = (req, res) => {
     });
   }
 
- // Archived accounts are hidden here (they appear on the Archive page instead)
-  let result = users.filter((u) => !u.archived);
-  if (role) result = result.filter((u) => u.role === role);
-  if (status) result = result.filter((u) => u.status === status);
+  // Build the MongoDB filter. Archived accounts are hidden here
+  // (they appear on the Archive page instead).
+  const filter = { archived: { $ne: true } };
+  if (role) filter.role = role;
+  if (status) filter.status = status;
   if (search) {
-    const text = search.trim().toLowerCase();
-    result = result.filter(
-      (u) => u.fullName.toLowerCase().includes(text) || u.email.includes(text)
-    );
+    // $or = match EITHER condition; $regex + "i" = "contains", not case-sensitive
+    const text = escapeRegex(search.trim());
+    filter.$or = [
+      { fullName: { $regex: text, $options: "i" } },
+      { email: { $regex: text, $options: "i" } },
+    ];
   }
 
+  const users = await User.find(filter);
+
   // Sort: admins first, then staff, then customers; alphabetical within each role
-  const sorted = [...result].sort(
+  users.sort(
     (a, b) =>
       ROLES.indexOf(a.role) - ROLES.indexOf(b.role) || a.fullName.localeCompare(b.fullName)
   );
 
-  res.json({ success: true, count: sorted.length, data: sorted.map(toPublicUser) });
+  res.json({ success: true, count: users.length, data: users.map(toPublicUser) });
 };
 
 // GET /api/users/:id
-const getUserById = (req, res) => {
-  const user = users.find((u) => u._id === req.params.id);
+const getUserById = async (req, res) => {
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
@@ -121,26 +129,22 @@ const createUser = async (req, res) => {
   }
 
   // 2. Email must not be used by another account
-  if (findUserByEmail(data.email)) {
+  if (await findUserByEmail(data.email)) {
     return res.status(409).json({
       success: false,
       message: "An account with this email already exists",
     });
   }
 
-  // 3. Create the user with a HASHED password
-  const newUser = {
-    _id: `u${Date.now()}`, // temporary unique ID; MongoDB will generate _id later
+  // 3. Create the user in MongoDB with a HASHED password
+  const newUser = await User.create({
     fullName: data.fullName.trim(),
     email: data.email.trim().toLowerCase(),
     phone: data.phone,
     passwordHash: await bcrypt.hash(data.password, SALT_ROUNDS),
     role: data.role,
     status: data.status || "active",
-    createdAt: new Date().toISOString(),
-  };
-
-  users.push(newUser);
+  });
 
   res.status(201).json({
     success: true,
@@ -151,9 +155,9 @@ const createUser = async (req, res) => {
 
 // PUT /api/users/:id
 // Edit a user's details, role, or status. Only the fields that were sent are changed.
-const updateUser = (req, res) => {
+const updateUser = async (req, res) => {
   // 1. Find the user
-  const user = users.find((u) => u._id === req.params.id);
+  const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
@@ -194,8 +198,8 @@ const updateUser = (req, res) => {
 
   // 5. A new email must not belong to ANOTHER account
   if (changes.email !== undefined) {
-    const owner = findUserByEmail(changes.email);
-    if (owner && owner._id !== user._id) {
+    const owner = await findUserByEmail(changes.email);
+    if (owner && !owner._id.equals(user._id)) {
       return res.status(409).json({
         success: false,
         message: "An account with this email already exists",
@@ -204,7 +208,7 @@ const updateUser = (req, res) => {
   }
 
   // 6. SAFETY RULES
-  const isSelf = user._id === req.user._id; // is the admin editing their own account?
+  const isSelf = user._id.equals(req.user._id); // is the admin editing their own account?
 
   if (isSelf && changes.role !== undefined && changes.role !== user.role) {
     return res.status(400).json({ success: false, message: "You cannot change your own role" });
@@ -222,20 +226,20 @@ const updateUser = (req, res) => {
     user.status === "active" &&
     ((changes.role !== undefined && changes.role !== "admin") || changes.status === "inactive");
 
-  if (removesActiveAdmin && countActiveAdmins() <= 1) {
+  if (removesActiveAdmin && (await countActiveAdmins()) <= 1) {
     return res.status(400).json({
       success: false,
       message: "The system must always have at least one active admin",
     });
   }
 
-  // 7. Apply the changes
+  // 7. Apply the changes and save to MongoDB
   if (changes.fullName !== undefined) user.fullName = changes.fullName.trim();
   if (changes.email !== undefined) user.email = changes.email.trim().toLowerCase();
   if (changes.phone !== undefined) user.phone = changes.phone;
   if (changes.role !== undefined) user.role = changes.role;
   if (changes.status !== undefined) user.status = changes.status;
-  user.updatedAt = new Date().toISOString();
+  await user.save();
 
   res.json({ success: true, message: "User updated", data: toPublicUser(user) });
 };
