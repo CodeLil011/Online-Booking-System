@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 (Website frame) ✅ Steps 8–10 · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB) ✅ Steps 27–31 · **Phase 10 (visual polish), in progress:** home page, photos and fonts (Step 9), favicon and account pages (Step 32), My Reservations and Profile (Step 33), dashboard (Step 34) done; still to do: phone check · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 (Website frame) ✅ Steps 8–10 · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB) ✅ Steps 27–31 · Phase 10 (Visual polish) ✅ Steps 9, 32–34 (phone check done) · **Next: demo preparation** (end-to-end testing, demo accounts) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
