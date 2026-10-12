@@ -403,16 +403,105 @@ textarea {
 
 /* ---------- Forms: Login / Register (Step 13) ---------- */
 
+/* The form box. Inside AuthLayout it blends into the right-hand panel. */
 .auth-card {
-  max-width: 420px;
-  margin: 32px auto;
-  padding: 32px 24px;
-  border-radius: 12px;
-  background-color: var(--color-surface);
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
+/* Page title in brush lettering, like the home page section titles */
 .auth-card h1 {
-  margin-top: 0;
+  margin: 0 0 4px;
+  font-family: var(--font-brush);
+  font-size: 2.2rem;
+  font-weight: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ----- AuthLayout: photo + logo on the left, form on the right ----- */
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: calc(100% - 32px); /* keeps a 16px gap from the screen edges */
+  max-width: 1000px;
+  margin: 40px auto;
+  overflow: hidden; /* rounds the photo's corners too */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #1c1c1c, #121212);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Photo side: the photo (set in AuthLayout.jsx) under a dark gradient so the logo is readable */
+.auth-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 580px;
+  padding: 40px 24px;
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.8)),
+    var(--auth-image, none);
+  background-position: center;
+  background-size: cover;
+  text-align: center;
+}
+
+/* Smaller version of the home page text logo */
+.auth-photo .hero-title {
+  margin-bottom: 20px;
+}
+
+.auth-photo .hero-title-main {
+  font-size: clamp(3rem, 7vw, 4.5rem);
+}
+
+.auth-photo .hero-title-sub {
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+}
+
+.auth-photo-text {
+  max-width: 280px;
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+/* Form side */
+.auth-panel {
+  display: flex;
+  align-items: center;
+  padding: 48px 40px;
+}
+
+/* Links on the account pages in light brown */
+.auth-panel a {
+  color: #d9a066;
+}
+
+/* Phones and small tablets: photo becomes a short banner above the form */
+@media (max-width: 800px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    margin: 24px auto;
+  }
+
+  .auth-photo {
+    min-height: 220px;
+    padding: 32px 16px;
+  }
+
+  .auth-photo-text {
+    display: none;
+  }
+
+  .auth-panel {
+    padding: 32px 20px;
+  }
 }
 
 .form {
@@ -1472,4 +1561,310 @@ textarea {
 .info-cards p {
   margin: 4px 0;
   color: var(--color-muted);
+}
+
+/* ---------- Customer pages: My Reservations, My Profile (Step 33) ---------- */
+
+/* Page titles in brush lettering, like the home page */
+.page h1 {
+  margin: 0 0 4px;
+  font-family: var(--font-brush);
+  font-size: 2.4rem;
+  font-weight: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.page .page-header {
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* Raised dark cards with a subtle border (Profile, and other pages that use .card) */
+.card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #1c1c1c, #141414);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.card h2 {
+  font-family: var(--font-logo-sub);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #d9a066; /* light brown */
+}
+
+/* Tabs (Upcoming / History): a pill-shaped switch */
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-surface);
+}
+
+.tab {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-muted);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab.active {
+  background-color: var(--color-brown);
+  color: var(--color-text);
+}
+
+/* Reservation cards: two per row on wide screens, one on phones */
+.reservation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* --status-color is set per status below; it colors the card's left edge */
+.reservation-card {
+  --status-color: var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--status-color);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1c1c1c, #141414);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.reservation-card.status-pending {
+  --status-color: #c9a227;
+}
+
+.reservation-card.status-confirmed {
+  --status-color: #3f9d5c;
+}
+
+.reservation-card.status-completed {
+  --status-color: #7a7a7a;
+}
+
+.reservation-card.status-cancelled {
+  --status-color: #b04545;
+  opacity: 0.8;
+}
+
+/* Date + time on the left, status badge on the right */
+.reservation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.reservation-card-header strong {
+  font-size: 1.1rem;
+}
+
+/* Guests / Table / Request: label on the left, value on the right */
+.reservation-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.reservation-details dt {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.reservation-details dd {
+  margin: 0;
+}
+
+.reservation-meta {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.reservation-status-text {
+  margin: 0;
+  color: var(--status-color);
+  font-size: 0.9rem;
+}
+
+.reservation-card .actions {
+  margin-top: auto; /* keeps the button at the bottom of the card */
+}
+
+/* "No reservations" box */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: 16px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* Links that look like buttons (e.g. "Book a Table") shouldn't be underlined */
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* ---------- Staff/Admin dashboard polish (Step 34) ---------- */
+/* Everything here is inside .sidebar or .dashboard-content, so the public pages aren't affected. */
+
+/* Sidebar stays in place while the page scrolls (phones: back to normal, see below) */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #1a1a1a, #111111);
+}
+
+.sidebar-links a {
+  color: var(--color-muted);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.sidebar-links a:hover {
+  color: var(--color-text);
+}
+
+/* Current page: soft brown background with a solid brown bar on the left */
+.sidebar-links a.active {
+  box-shadow: inset 3px 0 0 #d9a066;
+  background-color: rgba(111, 69, 24, 0.55);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.sidebar-back {
+  color: #d9a066;
+}
+
+/* Page titles in brush lettering, like the website */
+.dashboard-content .page-header h1 {
+  margin: 0 0 4px;
+  font-family: var(--font-brush);
+  font-size: 2.2rem;
+  font-weight: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.dashboard-content .page-header {
+  align-items: center;
+}
+
+/* Section headings ("Today's Reservations", ...) in small light-brown capitals */
+.dashboard-content h2 {
+  font-family: var(--font-logo-sub);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #d9a066;
+}
+
+/* Overview number cards: raised, like the website cards */
+.stat-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--color-brown);
+  background: linear-gradient(180deg, #1c1c1c, #141414);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.stat-value {
+  font-weight: 700;
+}
+
+/* Tables sit in a raised panel with rounded corners */
+.dashboard-content .table-wrapper {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1a1a1a, #121212);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Header row: a slightly lighter strip */
+.dashboard-content .data-table th {
+  background-color: rgba(255, 255, 255, 0.04);
+  letter-spacing: 1px;
+}
+
+/* No line under the last row (the panel's border is enough) */
+.dashboard-content .data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Highlight the row under the mouse */
+.dashboard-content .data-table tbody tr {
+  transition: background-color 0.15s;
+}
+
+.dashboard-content .data-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Search box and dropdowns: same look, brown outline when selected */
+.dashboard-content .toolbar input,
+.dashboard-content .toolbar select {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: #1e1e1e;
+}
+
+.dashboard-content .toolbar input:focus,
+.dashboard-content .toolbar select:focus {
+  outline: none;
+  border-color: var(--color-brown);
+}
+
+/* Normal links in the dashboard (e.g. "Go to Reservations") in light brown */
+.dashboard-content a:not(.btn) {
+  color: #d9a066;
+}
+
+/* Phones: the sidebar is a normal block on top again (see "Small screens") */
+@media (max-width: 700px) {
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+}
+
+/* Pop-up titles inside the dashboard keep their normal style */
+.dashboard-content .modal-header h2 {
+  font-family: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text);
 }

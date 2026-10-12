@@ -7,6 +7,7 @@ import { Routes, Route } from "react-router";
 // Layouts (shared page frames)
 import PublicLayout from "./layouts/PublicLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
+import AuthLayout from "./layouts/AuthLayout";
 
 // Page guard
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,10 +37,14 @@ function App() {
       {/* PUBLIC SITE: shown inside PublicLayout (navbar + footer) */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+
+        {/* Account pages: photo + logo next to the form (AuthLayout) */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        </Route>
 
 
         {/* Customers only */}

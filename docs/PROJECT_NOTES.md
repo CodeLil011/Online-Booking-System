@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Steps 8–10 ✅ (Step 9 ✅ incl. fonts) · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–30 ✅, next Step 31 (cleanup) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 (Website frame) ✅ Steps 8–10 · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB) ✅ Steps 27–31 · **Phase 10 (visual polish), in progress:** home page, photos and fonts (Step 9), favicon and account pages (Step 32), My Reservations and Profile (Step 33), dashboard (Step 34) done; still to do: phone check · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -213,11 +213,12 @@ resto-reservation-system/
     │   │                           PasswordInput, BookingForm, ReservationForm,
     │   │                           UserForm, TableForm, Photo, MenuCarousel
     │   ├── context/AuthContext.jsx who is logged in (shared by all pages)
-    │   ├── layouts/                PublicLayout (Navbar+Footer), DashboardLayout (Sidebar)
+    │   ├── layouts/                PublicLayout (Navbar+Footer), DashboardLayout (Sidebar),
+    │   │                           AuthLayout (photo + form, account pages)
     │   ├── pages/                  HomePage, Login, Register, Forgot/Reset Password,
     │   │   │                       MyReservations, Profile, NotFound
     │   │   └── dashboard/          Overview, Reservations, Tables, Customers, Users, Archive
-    │   ├── utils/                  dateHelpers.js, formatRef.js, images.js
+    │   ├── utils/                  dateHelpers.js, formatRef.js, formatPrice.js, images.js
     │   ├── config.js               restaurant name, story, menu, address, hours (one place)
     │   ├── App.jsx                 list of routes (URL → page)
     │   ├── index.css               all styles + color variables
@@ -1178,6 +1179,88 @@ MongoDB words used: `$gte` (≥), `$ne` (not equal), `$gt` (>), `$or` (either co
 
 **Presentation line:**
 > "The core booking logic now runs on MongoDB. To find free tables, the system asks the database which tables are already booked in that slot, then finds in-service tables that are big enough and not in that list, smallest first. Because a reservation stores only the table's ID, we use populate to show the table details. Bookings, status changes, cancellations and archive actions are all permanent now."
+
+---
+
+### STEP 31: Short booking references and Phase 9 cleanup (end of Phase 9)
+**Goal:** make reservation reference numbers short enough for people to read, and tidy up after the move to MongoDB.
+
+**Why short references?** A MongoDB id is 24 characters (`6aca7110be4a5b660eea7886`), too long to read out over the phone or type into a search box. We show only the **last 6 characters, in capitals**, like the last digits of a receipt number: `#EA7886`. The database still uses the full id; only what people see is shorter.
+
+**What we did**
+- `client/src/utils/formatRef.js`: `formatRef(id)` turns the full id into `#EA7886`. Used everywhere a reference is shown:
+  - My Reservations: "Ref: #EA7886 · Booked on …"
+  - Manage Reservations: the list, the "Edit Reservation (#EA7886)" title, and every success message (confirmed, updated, cancelled, archived)
+  - Archive: the list, the "Restore …?" question, and the success messages
+- **Searching by short reference:** typing `#EA7886` or `ea7886` finds the booking.
+  - Manage Reservations checks it in the browser: `formatRef(r._id)` equals the typed text.
+  - Archive asks the server: `archiveController.js` matches ids whose **last 6 characters** are the typed text (`$expr` + `$regexMatch` on the id turned into text with `$toString`). A full 24-character id still works too.
+- **Cleanup:**
+  - `server/data/*.js` are now only **sample data for `seed.js`**; their comments no longer say "temporary in-memory".
+  - `escapeRegex` (makes typed search text safe for a MongoDB search) lives in one place, `utils/validators.js`, instead of being copied into controllers.
+- **Follow-up fix:** `formatRef.js` first went into `server/utils/`, but React can't import files from the server folder, so it was moved to `client/src/utils/`.
+
+**Key concepts**
+| Concept | Meaning |
+|---|---|
+| `slice(-6)` | The last 6 characters of a text |
+| `$toString` | MongoDB: turn the id into text so it can be searched |
+| `$regexMatch` with `"ea7886$"` | "ends with ea7886" (`$` = end of the text), `options: "i"` ignores upper/lower case |
+| `$expr` | Lets a MongoDB filter use those calculation operators |
+
+**Could two bookings get the same short reference?** In theory yes, since only 6 of 24 characters are shown, but with the number of bookings a restaurant has it's extremely unlikely, and staff also see the name, date and time next to it.
+
+**Presentation line:**
+> "MongoDB ids are 24 characters long, which is too long for customers and staff to read out or type. Like a receipt, we show only the last 6 characters, for example #EA7886, and staff can search by that short reference. The full id is still used inside the database. This step also finished Phase 9: the old sample files are now only used to seed the database."
+
+---
+
+### STEP 32: Favicon and account pages (Phase 10: visual polish starts)
+**Goal:** make the rest of the website match the new home page (Step 9).
+
+**What we did**
+- **Favicon:** `client/public/favicon.svg`, a white serif "P" on POUND brown. Files in `client/public/` are served as they are, at the site's root address (`/favicon.svg`), which is where `index.html` points.
+- **New `layouts/AuthLayout.jsx`** for the four account pages (Login, Register, Forgot Password, Reset Password): a food photo (`about.jpg`) with the POUND text logo on the left, the page's form on the right. On phones the photo becomes a short banner above the form.
+- `App.jsx`: the four account routes are wrapped in `<Route element={<AuthLayout />}>`, inside `PublicLayout`, so they still have the navbar and footer. **The four pages themselves didn't change**: each still renders its `.auth-card`, which appears in the layout's `<Outlet />`.
+- Page titles (Login, Create an Account, …) use the brush font, and links on these pages are light brown.
+
+**Why a layout and not editing each page?** The frame is the same for all four pages. A layout route writes it once; the pages only contain their form. This is the same idea as `PublicLayout` and `DashboardLayout` (Step 8): layouts can be nested.
+
+**Presentation line:**
+> "All account pages share one layout: a food photo with our logo next to the form. It's a nested layout route, so the frame is written once and the Login, Register and password pages only contain their forms."
+
+---
+
+### STEP 33: My Reservations and My Profile (Phase 10)
+**Goal:** style the customer's own pages like the rest of the site.
+
+**What we did** (almost all in `index.css`, section "Customer pages")
+- **Page titles** (`.page h1`) use the brush font, like the home page.
+- **My Reservations:** its tabs, cards and empty box had class names since Step 20 but **no styles yet**, so they showed as plain text. Now:
+  - **Tabs** (Upcoming / History) are a pill-shaped switch; the active tab is brown.
+  - **Reservation cards** are raised dark cards, two or three per row (one on phones). Each card's left edge and status message use the status color: yellow Pending, green Confirmed, grey Completed, red Cancelled (slightly faded).
+  - Details (Guests, Table, Request, Cancelled by) are shown as label → value rows.
+  - "No reservations" is a dashed box with a Book a Table button.
+- `MyReservationsPage.jsx`: the only code change. Each card gets a class like `status-confirmed`, which sets `--status-color` in CSS.
+- **My Profile:** the `.card` boxes are raised with a subtle border; their headings are small light-brown capitals.
+- **Links styled as buttons** (`a.btn`, e.g. "Book a Table") are no longer underlined anywhere on the site.
+
+**CSS idea: one variable per status.** Instead of repeating the colors for the edge and the message, each status class only sets `--status-color`; the border and the message both use `var(--status-color)`.
+
+---
+
+### STEP 34: Staff/Admin dashboard (Phase 10)
+**Goal:** make the dashboard match the website, without changing how it works.
+
+**What we did** (only `index.css`, section "Staff/Admin dashboard polish"; no page code changed)
+- **Page titles** ("Welcome, Andrea", "Manage Tables", …) use the brush font; **section headings** ("Today's Reservations", "Pending Requests") are small light-brown capitals.
+- **Overview number cards** and **all tables** sit in raised dark panels with rounded corners and a subtle border. Tables have a lighter header strip and highlight the row under the mouse.
+- **Sidebar:** stays in place while the page scrolls (`position: sticky`); the current page has a soft brown background with a light-brown bar on the left.
+- **Search box and dropdowns** have the same look, with a brown outline when selected.
+- The Tables page's "Tables / Daily Schedule" switch automatically got the pill style from Step 33 (same `.tabs` class).
+- Pop-up titles (e.g. "Edit Reservation") keep their normal style.
+
+**Why everything starts with `.dashboard-content` or `.sidebar`:** those rules only apply inside the dashboard, so the public website can't change by accident. (CSS "scoping".)
 
 ---
 

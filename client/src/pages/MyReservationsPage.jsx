@@ -139,7 +139,8 @@ function MyReservationsPage() {
       ) : (
         <div className="reservation-list">
           {shown.map((r) => (
-            <article key={r._id} className="reservation-card">
+            // status-pending / status-confirmed / ... gives the card its colored edge (index.css)
+            <article key={r._id} className={`reservation-card status-${r.status.toLowerCase()}`}>
               <div className="reservation-card-header">
                 <div>
                   <strong>{formatDate(r.date)}</strong>
