@@ -6,6 +6,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { BRAND_MAIN, BRAND_SUB } from "../config";
 import { useAuth } from "../context/AuthContext";
+import { getImage } from "../utils/images";
+
+const logoImage = getImage("logo.png");
 
 // The round "person" icon, drawn with SVG
 function UserIcon() {
@@ -41,10 +44,16 @@ function Navbar() {
 
   return (
     <header className="navbar">
-      {/* Logo (text for now; the logo image is added later) */}
+      {/* Logo: the logo.png image if it's in assets/, otherwise the name as text */}
       <Link to="/" className="navbar-brand">
-        <span className="navbar-brand-main">{BRAND_MAIN}</span>
-        <span className="navbar-brand-sub">{BRAND_SUB}</span>
+        {logoImage ? (
+          <img src={logoImage} alt={`${BRAND_MAIN} ${BRAND_SUB}`} className="navbar-logo" />
+        ) : (
+          <>
+            <span className="navbar-brand-main">{BRAND_MAIN}</span>
+            <span className="navbar-brand-sub">{BRAND_SUB}</span>
+          </>
+        )}
       </Link>
 
       {/* Links to SECTIONS of the home page. "/#menu" = home page, scrolled to id="menu" */}

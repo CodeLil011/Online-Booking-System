@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Step 8 ✅, Step 10 ✅, Step 9 (home content) waiting for images · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–30 ✅, next Step 31 (cleanup) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3: Steps 8–10 ✅ (Step 9 ✅ incl. fonts) · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB): Steps 27–30 ✅, next Step 31 (cleanup) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -208,16 +208,17 @@ resto-reservation-system/
 └── client/                         ← React frontend made with Vite (port 5173)
     ├── src/
     │   ├── api/                    one file per backend area (apiClient adds the token)
+    │   ├── assets/                 home page photos (logo.png, hero.jpg, menu-1.jpg, ...)
     │   ├── components/             Navbar, Footer, Sidebar, ProtectedRoute, Modal,
     │   │                           PasswordInput, BookingForm, ReservationForm,
-    │   │                           UserForm, TableForm
+    │   │                           UserForm, TableForm, Photo, MenuCarousel
     │   ├── context/AuthContext.jsx who is logged in (shared by all pages)
     │   ├── layouts/                PublicLayout (Navbar+Footer), DashboardLayout (Sidebar)
     │   ├── pages/                  HomePage, Login, Register, Forgot/Reset Password,
     │   │   │                       MyReservations, Profile, NotFound
     │   │   └── dashboard/          Overview, Reservations, Tables, Customers, Users, Archive
-    │   ├── utils/                  dateHelpers.js, formatRef.js
-    │   ├── config.js               restaurant name (one place)
+    │   ├── utils/                  dateHelpers.js, formatRef.js, images.js
+    │   ├── config.js               restaurant name, story, menu, address, hours (one place)
     │   ├── App.jsx                 list of routes (URL → page)
     │   ├── index.css               all styles + color variables
     │   └── main.jsx                starts React inside <BrowserRouter> and <AuthProvider>
@@ -519,10 +520,62 @@ isTableBooked(updated.table, updated.date, updated.time, reservation._id)
 **How the scrolling works**
 Clicking **Menu** changes the URL to `/#menu`. `useLocation()` gives the current URL; a `useEffect` runs whenever it changes, takes `"menu"` from the hash, finds `<section id="menu">`, and calls `scrollIntoView({ behavior: "smooth" })`. This also works from other pages (e.g., clicking Menu on the Login page). `scroll-margin-top` keeps the sticky navbar from covering section titles.
 
-**Step 9 (home page content)** is postponed until the image files are ready (`client/src/assets/`: `logo.png`, `hero.jpg`, `about.jpg`, `menu-1.jpg`, `menu-2.jpg`, `menu-3.jpg`, `booking.jpg`). File names must match exactly; pixel sizes don't, because CSS (`object-fit: cover`) scales and crops. Use large enough images (hero ≥ 1920 px wide, others ≥ 800 px) so they shrink instead of stretch, and compress them.
+**Step 9 (home page content)** was done after the images arrived (see Step 9 below).
 
 **Presentation line:**
 > "The frontend uses React Router: every page has its own URL and pages switch without reloading. We use two layouts, a public layout with the navbar and footer and a dashboard layout with the sidebar. Each layout has an Outlet where the current page appears, so shared parts are written once. The customer home page is a single scrolling page; navbar links point to sections like `/#menu`, and a `useEffect` watches the URL and scrolls to the matching section."
+
+---
+
+### STEP 9: Home page content and photos
+**Goal:** replace the dashed placeholder boxes on the home page with the real sections from the draft.
+
+**What we did**
+- **Hero:** full-width food photo with the logo, tagline, and "Book a Table" / "View Menu" buttons. A dark gradient over the photo keeps the white text readable. Height = one screen (max 800px).
+- **About:** story text, three highlight boxes (Burgers / Flatbreads / Comfort Food), photo on the side.
+- **Menu:** `MenuCarousel`, a center-focused card carousel that loops forever: one portrait dish card in the center (full size, full focus), the previous and next cards peeking in, cropped at the edges, smaller and faded. Every 3 seconds it slides to the next dish; after the last dish comes the first again, with no rewind. Pauses on mouse-over. Below it, the full menu list in two columns.
+- **Dish details:** clicking the carousel photo or a dish in the list opens `MenuItemDetails`, a pop-up (reuses `Modal`) with the photo, category, price, longer description, ingredients, and a "Book a Table" button that closes the pop-up and scrolls to the booking form. `HomePage` keeps the clicked dish in `selectedItem` state (`null` = closed); the carousel tells the page which dish was clicked through its `onSelect` prop.
+- **Book Now:** photo on the left of the existing `BookingForm`.
+- **Visit Us:** three cards: address, opening hours, contact.
+- **Navbar:** shows `logo.png` instead of the text logo once the file exists.
+- All text (story, menu, address, hours) lives in `config.js`. The restaurant's real address, phone and email are filled in. The menu has 5 dishes; only the cheeseburger's price (₱425) comes from the restaurant, the other prices are our own estimates, which the group decided to keep.
+- `index.html` title is now "POUND x Flatterie".
+- **Fonts matching the real POUND branding** (Google Fonts, loaded in `index.html`, set as variables in `:root` of `index.css`):
+  | Font | Used for | Why |
+  |---|---|---|
+  | Bodoni Moda | "POUND" (hero, navbar, sidebar) | High-contrast serif like the real logo |
+  | Montserrat | "FLATTERIE", tagline box, navbar links | Thin, widely spaced capitals like the logo |
+  | Permanent Marker | Section titles (About Us, Menu, ...) | Brush lettering like the poster headlines |
+  | Poppins | All other text | Clean sans-serif like the poster captions |
+- The hero's text logo is built like the real one: **POUND** / tagline in a thin box / **FLATTERIE**. We decided not to use a `logo.png`; the text logo is used everywhere.
+
+**The photos** go in `client/src/assets/` with these exact names:
+| File | Section | Size | Status |
+|---|---|---|---|
+| `logo.png` | Hero + navbar (optional) | transparent background | not used: text logo instead |
+| `hero.jpg` | Hero background | ≥ 1920 px wide | ✅ |
+| `about.jpg` | About | ≥ 800 px | ✅ |
+| `menu-1.jpg` … `menu-5.jpg` | Menu carousel (one per dish in `MENU_ITEMS`) | square, ≥ 800 px | ✅ |
+| `booking.jpg` | Book Now | ≥ 800 px | ✅ |
+
+**How missing photos are handled**
+A normal `import hero from "../assets/hero.jpg"` **breaks the whole build** if the file doesn't exist. `utils/images.js` uses Vite's `import.meta.glob("../assets/*")`, which imports *whatever files are in the folder*. `getImage("hero.jpg")` returns the URL, or `null` if the file isn't there, and the `Photo` component shows a "Photo coming soon" box instead. So adding a photo = drop the file in `assets/`, nothing else.
+
+**Key concepts**
+| Concept | Meaning |
+|---|---|
+| `import.meta.glob` | Vite feature: import every file matching a pattern at once |
+| `object-fit: cover` | Fill the box and crop the edges (About / Book Now photos) |
+| `object-fit: contain` | Show the whole photo, no cropping (dish pop-up, so the poster text isn't cut off) |
+| Endless loop | The cards are placed three times in a row. It starts at copy 2 and slides one card at a time. When it reaches copy 3 (which looks exactly like copy 2), it jumps back one full copy with the animation switched off (`.jumping`), so the jump can't be seen |
+| `transform: translateX(...)` | `--index` is the card in the center. The row moves left by `--index` cards (card width + gap each), then right by half the viewport minus half a card, which puts that card exactly in the middle. A `transition` makes it slide |
+| Container query units (`cqi`) | `1cqi` = 1% of the carousel's width. Cards are `56cqi` wide (`64cqi` on phones), so the side cards are cropped the same way on every screen size |
+| Active card | The card at `--index` gets the class `active`: CSS scales it to 100% and the others to 86% with 45% opacity, with a `transition` for smoothness |
+| `setTimeout` + `paused` state | Waits 3 seconds, then moves to the next dish. `onMouseEnter` / `onMouseLeave` set `paused`, which stops the timer while the mouse is over the carousel |
+| `auto-fit, minmax(300px, 1fr)` | Two columns on wide screens, one column on phones, without a media query |
+
+**Presentation line:**
+> "The home page is one scrolling page with a hero, About, Menu, Book Now and Visit Us sections. All restaurant text is kept in one config file, so it can be changed without touching the page code. Photos are loaded from the assets folder by file name, and if one is missing the page shows a placeholder instead of breaking. The menu has a small carousel built with React state and a timer; clicking a dish opens a pop-up with its full details. The layout switches to one column on phones."
 
 ---
 

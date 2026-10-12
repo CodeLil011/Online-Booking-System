@@ -12,6 +12,17 @@
   --color-text: #ffffff;
   --color-muted: #b3b3b3; /* secondary text */
   --navbar-height: 64px;
+
+  /* Fonts matching the POUND branding (loaded in index.html).
+     The names after the first one are backups if the font can't load. */
+  --font-body: "Poppins", Arial, Helvetica, sans-serif; /* all normal text */
+  --font-logo: "Bodoni Moda", "Didot", Georgia, serif; /* "POUND" */
+  --font-logo-sub: "Montserrat", Arial, Helvetica, sans-serif; /* "FLATTERIE", tagline */
+  --font-brush: "Permanent Marker", "Comic Sans MS", cursive; /* section titles */
+  /* Hero photo darkness: 0 = photo at full brightness, 1 = photo hidden (black).
+     Higher = dimmer photo (lower opacity). Top and bottom of the hero. */
+  --hero-dim-top: 0.7;
+  --hero-dim-bottom: 0.85;
 }
 
 * {
@@ -24,13 +35,21 @@ html {
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-bg);
   color: var(--color-text);
 }
 
 a {
   color: inherit;
+}
+
+/* Buttons and form fields don't use the page font by default */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 /* ---------- Navbar (top) ---------- */
@@ -58,14 +77,24 @@ a {
 }
 
 .navbar-brand-main {
-  font-size: 1.4rem;
-  font-weight: bold;
-  letter-spacing: 2px;
+  font-family: var(--font-logo);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.navbar-logo {
+  display: block;
+  height: 44px;
+  width: auto;
 }
 
 .navbar-brand-sub {
+  margin-top: 2px;
+  font-family: var(--font-logo-sub);
   font-size: 0.6rem;
-  letter-spacing: 3px;
+  font-weight: 500;
+  letter-spacing: 4px;
   text-transform: uppercase;
 }
 
@@ -77,6 +106,10 @@ a {
 }
 
 .navbar-links a {
+  font-family: var(--font-logo-sub);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 2px;
   text-decoration: none;
   text-transform: uppercase;
 }
@@ -129,10 +162,6 @@ a {
   text-align: center;
 }
 
-.placeholder-hero {
-  min-height: 400px;
-}
-
 /* Book Now: photo left, form right (stacks on small screens) */
 .booking-layout {
   display: flex;
@@ -181,17 +210,20 @@ a {
 }
 
 .sidebar-brand {
-  font-size: 1.3rem;
-  font-weight: bold;
-  letter-spacing: 2px;
+  font-family: var(--font-logo);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
   text-decoration: none;
 }
 
 .sidebar-brand span {
   display: block;
-  font-size: 0.75rem;
-  font-weight: normal;
-  letter-spacing: 0;
+  font-family: var(--font-logo-sub);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: var(--color-muted);
 }
 
@@ -1023,4 +1055,421 @@ a {
 .password-input input::-ms-reveal,
 .password-input input::-ms-clear {
   display: none;
+}
+/* ---------- Home page content (Step 9) ---------- */
+
+/* Photos fill their box; object-fit: cover crops instead of stretching */
+.photo {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Photo beside text or the booking form (About, Book Now) */
+.side-photo {
+  height: 100%;
+  min-height: 320px;
+  max-height: 560px;
+}
+
+/* Brush lettering, like the headlines on the POUND posters */
+.section-title {
+  margin: 0 0 28px;
+  font-family: var(--font-brush);
+  font-size: 2.4rem;
+  font-weight: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Small brown line under each section title */
+.section-title::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 3px;
+  margin-top: 10px;
+  background-color: var(--color-brown);
+}
+
+/* Two columns (text | photo), stacked on small screens */
+.split-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+  align-items: center;
+}
+
+/* Hero: full-width photo (set in HomePage.jsx) under a dark gradient so the white text stays readable */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fills the screen under the navbar, but never taller than 800px */
+  min-height: min(calc(100vh - var(--navbar-height)), 800px);
+  padding: 48px 16px;
+  background-color: var(--color-surface);
+  /* Dark see-through layer on top of the photo (--hero-image is set in HomePage.jsx) */
+  background-image:
+    linear-gradient(rgba(0, 0, 0, var(--hero-dim-top)), rgba(0, 0, 0, var(--hero-dim-bottom))),
+    var(--hero-image, none);
+  background-position: center;
+  background-size: cover;
+  text-align: center;
+  scroll-margin-top: var(--navbar-height);
+}
+
+.hero-content {
+  max-width: 700px;
+}
+
+.hero-logo {
+  width: min(420px, 80%);
+  margin: 0 auto;
+}
+
+/* Text logo built like the real one: POUND / boxed tagline / FLATTERIE.
+   inline-flex = only as wide as "POUND", so the tagline box matches its width. */
+.hero-title {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0 0 36px;
+  font-weight: normal;
+  line-height: 1;
+}
+
+.hero-title-main {
+  font-family: var(--font-logo);
+  font-size: clamp(3.5rem, 14vw, 7rem);
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+/* "BURGERS • PIZZA • PASTA" in a thin white box under POUND */
+.hero-tagline {
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-text);
+  font-family: var(--font-logo-sub);
+  font-size: clamp(0.55rem, 2vw, 0.85rem);
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* "FLATTERIE": thin, widely spaced capitals */
+.hero-title-sub {
+  margin-top: 12px;
+  font-family: var(--font-logo-sub);
+  font-size: clamp(1.1rem, 4vw, 1.8rem);
+  font-weight: 400;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em; /* balances the space letter-spacing adds after the last letter */
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.hero-actions .btn {
+  padding: 12px 28px;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+/* About */
+.about-text {
+  margin-top: 0;
+  color: var(--color-muted);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.highlights {
+  display: grid;
+  gap: 12px;
+}
+
+.highlight {
+  padding: 14px 18px;
+  border-left: 3px solid var(--color-brown);
+  border-radius: 0 8px 8px 0;
+  background-color: var(--color-surface);
+}
+
+.highlight h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.highlight p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+/* Menu carousel: center-focused card carousel that loops forever (see MenuCarousel.jsx).
+   The viewport is a "container", so sizes inside can use cqi units:
+   1cqi = 1% of the viewport's width. That keeps the side cards cropped the same
+   way on every screen size. */
+.card-carousel {
+  margin-bottom: 32px;
+}
+
+.card-carousel-viewport {
+  --card-size: 56cqi; /* center card width: 56% of the viewport */
+  --card-gap: 3cqi;
+  max-width: 640px;
+  margin: 0 auto;
+  container-type: inline-size;
+  overflow: hidden; /* cards outside the viewport are hidden */
+  /* the cropped side cards fade softly at the edges */
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+/* The long row of cards. --index (set in MenuCarousel.jsx) is the card in the center:
+   the row is moved left by --index cards, then right by half the viewport minus half
+   a card, which puts that card exactly in the middle. The transition makes it slide. */
+.card-track {
+  display: flex;
+  align-items: center; /* cards keep their own portrait height */
+  gap: var(--card-gap);
+  padding: 28px 0; /* room for the bigger center card and its shadow */
+  transform: translateX(
+    calc(
+      50cqi - var(--card-size) / 2 - var(--index) * (var(--card-size) + var(--card-gap))
+    )
+  );
+  transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1); /* slow start, gentle stop */
+}
+
+/* The invisible jump back to the identical card: no animations at all */
+.card-track.jumping,
+.card-track.jumping .dish-card {
+  transition: none;
+}
+
+/* One dish card: portrait, rounded, subtle border, raised dark background.
+   Cards that aren't in the center are smaller and faded. */
+.dish-card {
+  display: flex;
+  flex: 0 0 var(--card-size);
+  flex-direction: column;
+  gap: 10px;
+  aspect-ratio: 3 / 4; /* portrait */
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #222222, #141414);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform: scale(0.86);
+  opacity: 0.45;
+  transition:
+    transform 0.7s ease,
+    opacity 0.7s ease,
+    border-color 0.3s,
+    box-shadow 0.7s;
+}
+
+/* The card in the center: full size, full focus */
+.dish-card.active {
+  transform: scale(1);
+  opacity: 1;
+  border-color: rgba(217, 160, 102, 0.45); /* light brown */
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+}
+
+.dish-card:not(.active):hover {
+  opacity: 0.7;
+}
+
+/* The photo fills the top of the card; the text sits below it */
+.dish-card-photo {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.dish-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px 4px;
+}
+
+.dish-card-category {
+  color: #d9a066;
+  font-family: var(--font-logo-sub);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.dish-card-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.carousel-hint {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Phones: the center card takes more of the width, smaller text */
+@media (max-width: 500px) {
+  .card-carousel-viewport {
+    --card-size: 64cqi;
+  }
+
+  .dish-card-name {
+    font-size: 0.9rem;
+  }
+}
+
+/* Menu list */
+/* Full menu under the carousel: two columns, one on phones */
+.menu-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  column-gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each dish is a button (clickable), styled to look like a menu row */
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 16px 12px;
+  border: none;
+  border-bottom: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background-color: var(--color-surface);
+}
+
+.menu-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.menu-item-name {
+  font-size: 1.05rem;
+  font-weight: bold;
+}
+
+.menu-item-description {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.menu-item-more {
+  display: block;
+  margin-top: 8px;
+  color: #d9a066;
+  font-size: 0.85rem;
+}
+
+/* Dish details pop-up */
+.menu-details-photo {
+  aspect-ratio: 1 / 1;
+  max-height: 300px; /* keeps the pop-up short enough for laptop screens */
+  object-fit: contain;
+  background-color: var(--color-bg);
+}
+
+.menu-details-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.menu-details-info .badge {
+  background-color: var(--color-brown);
+}
+
+.menu-details-info .menu-price {
+  font-size: 1.3rem;
+}
+
+.menu-details-text {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.menu-details-heading {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+/* Ingredients shown as small pills */
+.ingredient-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredient-list li {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.menu-price {
+  color: #d9a066; /* light brown, readable on black */
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* Location */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.info-cards h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.info-cards p {
+  margin: 4px 0;
+  color: var(--color-muted);
 }
