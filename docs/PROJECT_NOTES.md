@@ -2,7 +2,7 @@
 
 Study notes for the group. Updated after every completed step.
 
-**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 (Website frame) ✅ Steps 8–10 · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB) ✅ Steps 27–31 · Phase 10 (Visual polish) ✅ Steps 9, 32–34 (phone check done) · **Next: demo preparation** (end-to-end testing, demo accounts) · Project is on GitHub (`CodeLil011/Online-Booking-System`)
+**Progress:** Phase 1 ✅ · Phase 2 ✅ · Phase 3 (Website frame) ✅ Steps 8–10 · Phase 4 (Authentication) ✅ Steps 11–15 · Phase 5 (User Management) ✅ Steps 16–17 · Phase 6 (Restaurant Booking) ✅ Steps 18–20 · Phase 7 (Staff/Admin Management) ✅ Steps 21–24 · Phase 8 (Archive) ✅ Steps 25–26 · Phase 9 (MongoDB) ✅ Steps 27–31 · Phase 10 (Visual polish) ✅ Steps 9, 32–42 · Phase 11 (Realistic data): Step 43 waiting for `npm run seed` · **Next:** Phase 11 (realistic data: 10+ users, 20+ completed bookings) and demo preparation · Project is on GitHub (`CodeLil011/Online-Booking-System`)
 
 ---
 
@@ -239,6 +239,7 @@ resto-reservation-system/
 | `nodemon` (dev only) | server | Restarts the server automatically when a file is saved |
 | `react`, `react-dom`, `vite` | client | Installed by the Vite React template |
 | `react-router` | client | Multiple pages with their own URLs, without page reloads (installed as v8) |
+| `gsap`, `@gsap/react` | client | Animations: hero entrance, scroll reveal, parallax, account-page entrance (Steps 35, 39) |
 
 **Tool:** REST Client (VS Code extension by Huachao Mao) for testing API requests from `.http` files.
 
@@ -1261,6 +1262,114 @@ MongoDB words used: `$gte` (≥), `$ne` (not equal), `$gt` (>), `$or` (either co
 - Pop-up titles (e.g. "Edit Reservation") keep their normal style.
 
 **Why everything starts with `.dashboard-content` or `.sidebar`:** those rules only apply inside the dashboard, so the public website can't change by accident. (CSS "scoping".)
+
+---
+
+### Tweaks after Step 34: continuous menu carousel + POUND font for headings
+- **Headings:** section titles (ABOUT US, MENU, BOOK A TABLE, VISIT US) and the page titles of the account pages, customer pages and dashboard now use **Bodoni Moda** (`var(--font-logo)`, weight 700), the same font as the POUND logo, instead of the brush font.
+- **Menu carousel** (`MenuCarousel.jsx`) rebuilt as a **conveyor belt** that never stops: the dishes are placed twice in a row and a CSS animation slides the row left by exactly half its width (one copy), then restarts. The restart can't be seen, so it looks endless. Hover pauses it (`animation-play-state: paused`); clicking a card opens the dish details. Speed: `SECONDS_PER_DISH` (seconds for one card to pass). `margin-right` is used instead of `gap` so both copies are exactly the same width.
+- **Spacing fix:** buttons placed directly in a pop-up (reason pop-ups for Reject/Cancel) got space above them: `.modal > .form-actions { margin-top: 20px; }`.
+
+---
+
+### STEP 35: GSAP animations on the home page
+**Goal:** a more polished, "alive" home page.
+
+**New dependency (justified):** `gsap` + `@gsap/react` (in `client`). GSAP is the industry-standard animation library (free), with **ScrollTrigger** for scroll-based animations, which plain CSS can't do easily. `@gsap/react` gives `useGSAP()`, which cleans up the animations automatically when the page closes. Groupmates must run `npm install` in `client` after pulling.
+
+**What we did**
+- New `client/src/hooks/useHomeAnimations.js` (a **hook** = reusable React logic), used in `HomePage.jsx` with a `ref` on the page wrapper (`<div ref={pageRef}>`), so animations only affect the home page.
+  1. **Hero entrance** (timeline): POUND rises in → the tagline box opens from the middle → FLATTERIE → the 2 buttons one after another (≈2.5 s).
+  2. **Scroll reveal** (ScrollTrigger, `start: "top 85%"`): section titles, About text, photos, carousel and booking form slide up when they reach the screen; the About boxes, menu list and Visit Us cards appear **one by one** (`stagger`). Each plays once.
+  3. **Parallax**: the hero photo is now its own layer (`.hero-bg`, 20% taller than the hero) that GSAP moves while scrolling (`scrub: true`), so it moves slower than the page.
+- People who turned off animations in their device settings get none (`prefers-reduced-motion`).
+
+**Words:** *timeline* (animations in order; `"-=0.5"` = start 0.5 s early), *stagger* (delay between items of a group), *scrub* (animation follows the scrollbar).
+
+---
+
+### STEP 36: Navbar highlights the current section (scroll spy)
+- New `hooks/useActiveSection.js`: on every scroll it measures how many pixels of each home page section are on screen; the **most visible** section is active. At the very bottom of the page, the last section (Visit Us) wins, because it's short.
+- `Navbar.jsx`: links built from one `NAV_LINKS` list (added **Visit Us**); the active link gets `class="active"` and `aria-current`.
+- CSS: links slightly dimmed; an underline grows from the middle (half on hover, full when active).
+
+---
+
+### STEP 37: Transparent navbar over the hero
+- The hero slides **up behind** the sticky navbar (negative top margin), so the photo starts at the very top of the screen.
+- `Navbar.jsx` checks on every scroll whether the **bottom of the hero** is still below the navbar → class `navbar-over-hero` = transparent with a soft dark fade (readable links); otherwise solid brown (smooth `transition`). Other pages: always brown.
+
+---
+
+### STEP 38: Mobile menu (☰)
+- Phones (≤ 700px): the section links become a **drop-down panel** opened by a ☰ button (it turns into ✕). One list of links, two looks, decided by CSS `@media`.
+- State `linksOpen` in `Navbar.jsx`; `aria-expanded` / `aria-label` for screen readers.
+- The panel closes when a link, the logo, or the login icon is tapped; the ☰ panel and the profile menu never open at the same time. While open, the navbar is solid (not transparent).
+- **Bug we caught while testing:** when logged out, the profile icon is a *link* to Login (not the dropdown button), so it didn't close the panel. Fixed by closing the panel in that link's `onClick` (and the logo's).
+
+---
+
+### STEP 39: Short entrance on the account pages
+- New `hooks/useAuthAnimations.js`, used in `AuthLayout.jsx` (so it covers Login, Register, Forgot and Reset Password).
+- The photo panel fades in once; the form card slides up and its fields appear one quick step at a time (≈0.6 s), again when switching page (e.g. Login → Register: `dependencies: [pathname]`).
+- **Kept short on purpose:** these are task pages, so typing works immediately during the animation. No animations on the dashboard or My Reservations (used all day; repeated animations get annoying).
+
+### STEP 40: Visit Us: Google Map, directions, click-to-call, "Open now" badge
+**Goal:** finish the Location section we planned ("real address + map") and make it useful.
+
+**What we did**
+- `config.js`: `OPEN_HOUR = 10`, `CLOSE_HOUR = 22` (hours as numbers for the badge) and `MAP_QUERY` (what Google Maps searches for).
+- `HomePage.jsx` Visit Us: map on the left, 3 cards on the right (stacked on phones):
+  - **Embedded Google Map** (`<iframe src="https://www.google.com/maps?q=...&output=embed">`): free, no account or API key. `loading="lazy"` = it only loads when you scroll near it.
+  - **Get Directions** button → Google Maps directions in a new tab (`target="_blank"` + `rel="noopener noreferrer"` for safety).
+  - **Click-to-call** (`tel:+639176318950`) and **click-to-email** (`mailto:`) links: on a phone they open the phone/email app.
+- New `components/OpenStatusBadge.jsx`: green **"Open now · closes 10:00 PM"** or red **"Closed · opens 10:00 AM"**. Uses the time in **Asia/Manila** (correct even if the visitor's computer is in another time zone) and re-checks every minute (`setInterval`).
+- The map also slides in with the scroll reveal (Step 35).
+
+**Rule:** open when 10:00 ≤ now < 22:00 (checked: 9:59 closed, 10:00 open, 21:59 open, 22:00 closed).
+
+**Known minor issue (for testing phase):** opening the site *directly* with a link ending in `#location` can stop a bit too early, because photos above it finish loading after the jump and push the page down. Clicking the navbar links works fine.
+
+### STEP 41: "Tables left" on the booking time slots
+- The backend already sent `tablesLeft` for each slot (`GET /api/reservations/slots`, Step 19); now the booking form shows it.
+- `BookingForm.jsx`: new helper `slotLabel(slot)` → "Available", **"Only 2 tables left"** (3 or fewer), **"Last table!"** (1), or the reason it's disabled ("Fully booked", "Time has passed"). Low numbers are shown in light orange (`.few-left`).
+- **Why only when few are left:** like real booking sites, it creates a little urgency without showing the restaurant's exact capacity all the time.
+- Example (12 tables, Table 11 out of service): 6 guests → "Only 3 tables left" (Tables 9, 10, 12 fit), 10 guests → "Last table!" (only Table 12).
+
+### STEP 42: Footer credit + balanced menu list (end of Phase 10)
+- **Footer:** a third, smaller line: *"Menu items, photos, and prices are based on POUND x Flatterie and are used for academic purposes only."* **No link** to an outside menu site: this is a mock-up project, and the menu listing we found (imenuph.com) is a third-party site, not POUND's official page.
+- **Menu list:** changed from a CSS grid to **flexbox with `justify-content: center`**, so with 5 dishes the last row's 2 dishes sit in the **middle** instead of on the left. 3 per row on computers, 2 on tablets (≤ 900px), 1 on phones (≤ 600px). Works for any number of dishes.
+- **Note for the presentation:** the prices on our site don't all match the third-party listing (e.g. Good Ol' Fries ₱195 here vs ₱90 there), and Spaghetti and Meatballs isn't on that listing. Since it's a mock-up, we kept our sample prices; say so if asked.
+- **Hint text (placeholders):** they were so bright they looked like real typed text. Now dimmer and in italics, and they **disappear as soon as you click** a field (`input:focus::placeholder { color: transparent; }`). Applies to every form on the site.
+
+### STEP 43: Realistic sample data (Phase 11)
+**Goal:** meet the requirements **"at least 10 realistic users"** and **"at least 20 completed transactions"**, and make every page look lived-in for the demo.
+
+**Users (13)** in `server/data/users.js`:
+| Role | People | Password |
+|---|---|---|
+| Admin | Andrea Villanueva | `Admin@123` |
+| Staff | Marco Delos Reyes, Rene Baterbonia | `Staff@123` |
+| Customers | Maria Santos, Paolo Garcia (**inactive**), Kclei Comuelo, Giuz Montaño, Khalil Espiritu, Al-vi Ebdane, Giian Medina, Syd Villanueva, Carlo Valino, Jhoshua Gacud | `Customer@123` |
+
+Emails follow `firstname.surname@gmail.com` (some yahoo/outlook), e.g. `giuz.montano@gmail.com`, `alvi.ebdane@gmail.com`.
+
+**Reservations (40)** in `server/data/reservations.js`, covering about 6 weeks:
+| Group | Count |
+|---|---|
+| **Completed** | **26** (24 visible + 2 archived) ✅ requirement: 20+ |
+| Cancelled (customer, rejected by staff, no-show; 1 archived) | 5 |
+| Confirmed **yesterday** (staff can demo "Complete" / "No-show") | 1 |
+| Today (Confirmed) | 2 |
+| Upcoming (4 Pending, 2 Confirmed) | 6 |
+
+- **Dates are counted from today** (`day(-7)` = 7 days ago, `day(0)` = today), and sign-up dates too, so whenever you run the seed the data looks current. Run it on presentation day.
+- A mix of **account** bookings (name/email/phone copied from the account with `account("u3")`) and **phone/walk-in** bookings (`walkIn(...)`).
+- Different tables, time slots, party sizes and special requests; Table 11 (out of service) is never used.
+
+**`seed.js` now checks the data first** (`checkSampleData()`), with the same rules as the real system: the table exists, the party fits it, no table used twice in the same slot (cancelled ones don't count), no upcoming booking on an out-of-service table, account bookings belong to a customer, and no customer holds 2 active bookings in one slot. **If anything is wrong it stops before deleting anything.** After seeding it prints a summary (users by role, reservations by status, archived count).
+
+**Tested on a temporary database:** 13 users (1/2/10), 37 visible + 3 archived reservations, 24 visible Completed, 2 today, 4 Pending, Maria's stats (3 completed, last visit 14 days ago), the conflict check still blocks double booking, and a deliberately broken data file was refused.
 
 ---
 

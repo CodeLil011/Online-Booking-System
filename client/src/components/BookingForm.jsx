@@ -14,6 +14,16 @@ import { getTodayString, addDaysString, formatTime, formatDate } from "../utils/
 const BOOKING_WINDOW_DAYS = 30; // same rule as the backend
 const GUEST_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1); // [1, 2, ..., 10]
 
+// The small text under a time slot button.
+// Like booking sites, the exact number is only shown when few tables are left.
+const FEW_TABLES = 3;
+const slotLabel = (slot) => {
+  if (!slot.available) return slot.reason; // "Fully booked" or "Time has passed"
+  if (slot.tablesLeft === 1) return "Last table!";
+  if (slot.tablesLeft <= FEW_TABLES) return `Only ${slot.tablesLeft} tables left`;
+  return "Available";
+};
+
 function BookingForm() {
   const { user } = useAuth();
   const isCustomer = user?.role === "customer"; // ?. = "if user exists"
@@ -225,7 +235,9 @@ function BookingForm() {
                 onClick={() => setForm({ ...form, time: slot.time })}
               >
                 {formatTime(slot.time)}
-                <small>{slot.available ? "Available" : slot.reason}</small>
+                <small className={slot.available && slot.tablesLeft <= FEW_TABLES ? "few-left" : undefined}>
+                  {slotLabel(slot)}
+                </small>
               </button>
             ))}
           </div>

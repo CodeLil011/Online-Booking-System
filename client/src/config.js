@@ -88,3 +88,8 @@ export const PHONE = "+63 917 631 8950";
 export const CONTACT_EMAIL = "poundmoa@gmail.com";
 // Shown in the Visit Us section (booking time slots are set separately in server/config/businessRules.js)
 export const OPENING_HOURS = "Daily, 10:00 AM – 10:00 PM";
+// The same hours as numbers (24-hour clock), for the live "Open now / Closed" badge
+export const OPEN_HOUR = 10; // 10:00 AM
+export const CLOSE_HOUR = 22; // 10:00 PM
+// What Google Maps searches for: the map in Visit Us and the "Get Directions" button
+export const MAP_QUERY = "POUND x Flatterie, SM Mall of Asia, Pasay City";

@@ -13,6 +13,11 @@ function Footer() {
         Student academic project for demonstration only. Not affiliated with the actual
         restaurant.
       </p>
+      {/* Credit for the content we used (no link: this is a mock-up project) */}
+      <p className="footer-credit">
+        Menu items, photos, and prices are based on {RESTAURANT_NAME} and are used for academic
+        purposes only.
+      </p>
     </footer>
   );
 }

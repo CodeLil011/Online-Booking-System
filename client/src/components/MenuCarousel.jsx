@@ -1,81 +1,43 @@
 // components/MenuCarousel.jsx
-// Card carousel for the Menu section: one dish card in the center, in full focus,
-// with the previous and next cards peeking in (cut off) at the left and right edges.
-// It moves by itself: shows a dish, then slides to the next one, forever.
+// Menu carousel that moves CONSTANTLY, like a conveyor belt (no stops).
 // - Pauses while the mouse is over it, so a dish is easy to click
 // - Clicking a card calls onSelect(item), so the page can show that dish's details
 //
 // How the endless loop works:
-//   The cards are placed THREE times in a row: [copy 1][copy 2][copy 3].
-//   We start at the first card of copy 2 and slide one card to the right each time.
-//   When we reach copy 3, its cards look exactly like copy 2's, so right after the
-//   slide we jump back by one full copy with the animation switched off.
-//   The jump can't be seen, so the row seems to go on forever.
+//   The cards are placed TWICE in a row: [copy 1][copy 2].
+//   A CSS animation slides the whole row to the left by exactly half its width
+//   (= one copy), then starts again from the beginning. At that moment copy 2 is
+//   exactly where copy 1 started, so the restart can't be seen: it looks endless.
+//   The movement itself is pure CSS (see .marquee-track in index.css).
 
-import { useEffect, useState } from "react";
 import Photo from "./Photo";
 import { formatPrice } from "../utils/formatPrice";
 
-const SECONDS_PER_DISH = 3; // how long each dish stays in the center
-const SLIDE_MS = 700; // how long one slide takes (same as the transition in index.css)
+// Speed: how many seconds ONE card takes to move past.
+// Smaller = faster. The whole loop takes (number of dishes × this) seconds.
+const SECONDS_PER_DISH = 6;
 
 function MenuCarousel({ items, onSelect }) {
-  const count = items.length;
-  // Position in the long row (0 .. 3 × count - 1). Starts at the first card of copy 2.
-  const [index, setIndex] = useState(count);
-  const [paused, setPaused] = useState(false);
-  const [jumping, setJumping] = useState(false); // true = animations off for the invisible jump
+  if (items.length === 0) return null;
 
-  // Every few seconds, slide to the next dish (unless paused)
-  useEffect(() => {
-    if (paused || jumping || count < 2) return;
-    const timer = setTimeout(() => setIndex(index + 1), SECONDS_PER_DISH * 1000);
-    return () => clearTimeout(timer);
-  }, [index, paused, jumping, count]);
-
-  // Reached copy 3: once the slide has finished, jump back one full copy (invisible)
-  useEffect(() => {
-    if (index < count * 2) return;
-    const timer = setTimeout(() => {
-      setJumping(true);
-      setIndex(index - count);
-    }, SLIDE_MS);
-    return () => clearTimeout(timer);
-  }, [index, count]);
-
-  // After the jump has been drawn, switch the animations back on
-  useEffect(() => {
-    if (!jumping) return;
-    const frame = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setJumping(false)),
-    );
-    return () => cancelAnimationFrame(frame);
-  }, [jumping]);
-
-  if (count === 0) return null;
-
-  // The long row: the menu three times
-  const row = [...items, ...items, ...items];
+  // The row: the menu twice
+  const row = [...items, ...items];
 
   return (
-    <div
-      className="card-carousel"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      <div className="card-carousel-viewport">
+    <div className="marquee">
+      <div className="marquee-viewport">
         <div
-          className={jumping ? "card-track jumping" : "card-track"}
-          style={{ "--index": index }}
+          className="marquee-track"
+          style={{ "--loop-seconds": `${items.length * SECONDS_PER_DISH}s` }}
         >
           {row.map((item, i) => {
-            // Only copy 2 is read out by screen readers and reachable with Tab
-            const isCopy = i < count || i >= count * 2;
+            // Only copy 1 is read out by screen readers and reachable with Tab
+            const isCopy = i >= items.length;
             return (
               <button
                 key={i}
                 type="button"
-                className={i === index ? "dish-card active" : "dish-card"}
+                className="dish-card"
                 onClick={() => onSelect(item)}
                 aria-label={`View details: ${item.name}`}
                 aria-hidden={isCopy ? true : undefined}

@@ -3,15 +3,21 @@
 // a food photo with the POUND logo on one side, the page's form on the other.
 // On phones the photo becomes a short banner above the form.
 
+import { useRef } from "react";
 import { Outlet } from "react-router";
 import { BRAND_MAIN, BRAND_SUB, TAGLINE } from "../config";
 import { getImage } from "../utils/images";
+import { useAuthAnimations } from "../hooks/useAuthAnimations";
 
 const photo = getImage("about.jpg");
 
 function AuthLayout() {
+  // Short GSAP entrance for the photo panel and the form (see useAuthAnimations.js)
+  const layoutRef = useRef(null);
+  useAuthAnimations(layoutRef);
+
   return (
-    <div className="auth-layout">
+    <div className="auth-layout" ref={layoutRef}>
       <div
         className="auth-photo"
         style={photo ? { "--auth-image": `url(${photo})` } : undefined}

@@ -67,6 +67,14 @@ textarea {
   padding: 8px 24px;
   background-color: var(--color-brown);
   border-radius: 0 0 16px 16px;
+  transition: background-color 0.4s ease; /* fades between transparent and brown */
+}
+
+/* Over the hero photo (home page, top): transparent, with a soft dark fade at the top
+   so the white links stay readable on any photo. Set in Navbar.jsx. */
+.navbar.navbar-over-hero {
+  background-color: transparent;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), transparent);
 }
 
 .navbar-brand {
@@ -106,21 +114,71 @@ textarea {
 }
 
 .navbar-links a {
+  position: relative; /* the underline (::after) is placed under it */
+  padding: 4px 0;
   font-family: var(--font-logo-sub);
   font-size: 0.9rem;
   font-weight: 500;
   letter-spacing: 2px;
   text-decoration: none;
   text-transform: uppercase;
+  opacity: 0.75; /* links are slightly dimmed... */
+  transition: opacity 0.25s ease;
 }
 
-.navbar-links a:hover {
-  text-decoration: underline;
+/* ...and fully bright on hover or when their section is on screen */
+.navbar-links a:hover,
+.navbar-links a.active {
+  opacity: 1;
+}
+
+/* Underline that grows from the center: half on hover, full for the active section */
+.navbar-links a::after {
+  content: "";
+  position: absolute;
+  right: 2px; /* 2px = the extra letter-spacing after the last letter */
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.navbar-links a:hover::after {
+  transform: scaleX(0.5);
+}
+
+.navbar-links a.active::after {
+  transform: scaleX(1);
 }
 
 .navbar-profile {
   display: flex;
 }
+
+/* ☰ button for the section links: hidden on computers, shown on phones (see below) */
+.navbar-toggle {
+  display: none;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+@keyframes links-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 /* ---------- Public pages ---------- */
 
@@ -189,6 +247,12 @@ textarea {
 
 .footer p {
   margin: 4px 0;
+}
+
+/* Credit line: a little smaller and dimmer than the rest of the footer */
+.footer .footer-credit {
+  font-size: 0.75rem;
+  opacity: 0.75;
 }
 
 /* ---------- Dashboard (left sidebar) ---------- */
@@ -267,11 +331,40 @@ textarea {
     padding: 8px 16px;
   }
 
+  /* The section links become a drop-down panel under the navbar, opened with ☰ */
   .navbar-links {
-    order: 3; /* links move to their own row under the logo and icon */
-    width: 100%;
-    gap: 14px;
-    font-size: 0.85rem;
+    display: none; /* hidden until the ☰ button opens it */
+    position: absolute; /* placed right under the navbar, over the page */
+    top: 100%;
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px 20px;
+    background-color: var(--color-brown);
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .navbar-links.open {
+    display: flex;
+    animation: links-drop 0.25s ease; /* slides down a little when opening */
+  }
+
+  .navbar-links a {
+    padding: 10px 0;
+    font-size: 1rem;
+  }
+
+  /* While the panel is open, the navbar's bottom corners are square (the panel continues it) */
+  .navbar.links-open {
+    border-radius: 0;
+  }
+
+  .navbar-toggle {
+    display: flex;
+    margin-left: auto; /* sits on the right, next to the profile icon */
   }
 
   .dashboard-layout {
@@ -413,10 +506,9 @@ textarea {
 /* Page title in brush lettering, like the home page section titles */
 .auth-card h1 {
   margin: 0 0 4px;
-  font-family: var(--font-brush);
-  font-size: 2.2rem;
-  font-weight: normal;
-  letter-spacing: 1px;
+  font-family: var(--font-logo); /* same font as the "POUND" logo */
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -531,8 +623,18 @@ textarea {
   font-size: 1rem;
 }
 
-.form-group input::placeholder {
-  color: #c8c8c8;
+/* Hint text (placeholder): dimmer and in italics, so it clearly looks like a
+   suggestion and not like something already typed */
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #9a9a9a;
+  font-style: italic;
+}
+
+/* The hint disappears as soon as you click into the field */
+input:focus::placeholder,
+textarea:focus::placeholder {
+  color: transparent;
 }
 
 .form-group input:focus {
@@ -945,6 +1047,16 @@ textarea {
   color: var(--color-text);
 }
 
+/* "Only 2 tables left" / "Last table!": light orange, so it stands out (Step 41) */
+.slot-btn small.few-left {
+  color: #f0a85a;
+  font-weight: 600;
+}
+
+.slot-btn.selected small.few-left {
+  color: #ffd9a8;
+}
+
 .slot-btn:disabled {
   opacity: 0.35;
   text-decoration: line-through;
@@ -1165,10 +1277,9 @@ textarea {
 /* Brush lettering, like the headlines on the POUND posters */
 .section-title {
   margin: 0 0 28px;
-  font-family: var(--font-brush);
-  font-size: 2.4rem;
-  font-weight: normal;
-  letter-spacing: 1px;
+  font-family: var(--font-logo); /* same font as the "POUND" logo */
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -1195,21 +1306,38 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Fills the screen under the navbar, but never taller than 800px */
-  min-height: min(calc(100vh - var(--navbar-height)), 800px);
-  padding: 48px 16px;
+  /* The hero slides UP behind the navbar (negative margin), so the photo starts at the
+     very top of the screen and shows through the transparent navbar.
+     It fills the whole screen, but is never taller than 800px + the navbar. */
+  margin-top: calc(-1 * var(--navbar-height));
+  min-height: min(100vh, calc(800px + var(--navbar-height)));
+  padding: calc(48px + var(--navbar-height)) 16px 48px; /* top: room for the navbar */
+  position: relative; /* the photo layer (.hero-bg) is placed inside it */
+  overflow: hidden; /* hides the parts of the photo layer that stick out */
   background-color: var(--color-surface);
-  /* Dark see-through layer on top of the photo (--hero-image is set in HomePage.jsx) */
+  text-align: center;
+  scroll-margin-top: var(--navbar-height);
+}
+
+/* The photo layer: 20% taller than the hero, so it has room to move for the parallax
+   (GSAP slides it down while scrolling). Dark see-through layer on top of the photo
+   (--hero-image is set in HomePage.jsx). */
+.hero-bg {
+  position: absolute;
+  top: -10%;
+  right: 0;
+  left: 0;
+  height: 120%;
   background-image:
     linear-gradient(rgba(0, 0, 0, var(--hero-dim-top)), rgba(0, 0, 0, var(--hero-dim-bottom))),
     var(--hero-image, none);
   background-position: center;
   background-size: cover;
-  text-align: center;
-  scroll-margin-top: var(--navbar-height);
+  will-change: transform; /* smoother movement */
 }
 
 .hero-content {
+  position: relative; /* sits ON TOP of the photo layer */
   max-width: 700px;
 }
 
@@ -1305,55 +1433,51 @@ textarea {
   color: var(--color-muted);
 }
 
-/* Menu carousel: center-focused card carousel that loops forever (see MenuCarousel.jsx).
-   The viewport is a "container", so sizes inside can use cqi units:
-   1cqi = 1% of the viewport's width. That keeps the side cards cropped the same
-   way on every screen size. */
-.card-carousel {
+/* Menu carousel: a row of dish cards that moves constantly to the left and loops
+   forever, like a conveyor belt (see MenuCarousel.jsx). Hover = pause. */
+.marquee {
   margin-bottom: 32px;
 }
 
-.card-carousel-viewport {
-  --card-size: 56cqi; /* center card width: 56% of the viewport */
-  --card-gap: 3cqi;
-  max-width: 640px;
-  margin: 0 auto;
-  container-type: inline-size;
-  overflow: hidden; /* cards outside the viewport are hidden */
-  /* the cropped side cards fade softly at the edges */
-  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+.marquee-viewport {
+  overflow: hidden; /* cards outside the box are hidden */
+  /* cards fade softly in and out at the left and right edges */
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
 }
 
-/* The long row of cards. --index (set in MenuCarousel.jsx) is the card in the center:
-   the row is moved left by --index cards, then right by half the viewport minus half
-   a card, which puts that card exactly in the middle. The transition makes it slide. */
-.card-track {
+/* The row of cards (the menu twice). It slides left by exactly half its width
+   (= one copy of the menu), then restarts: the restart is invisible. */
+.marquee-track {
   display: flex;
-  align-items: center; /* cards keep their own portrait height */
-  gap: var(--card-gap);
-  padding: 28px 0; /* room for the bigger center card and its shadow */
-  transform: translateX(
-    calc(
-      50cqi - var(--card-size) / 2 - var(--index) * (var(--card-size) + var(--card-gap))
-    )
-  );
-  transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1); /* slow start, gentle stop */
+  width: max-content; /* as wide as all the cards together */
+  padding: 20px 0; /* room for the hover lift and shadow */
+  animation: marquee-scroll var(--loop-seconds, 18s) linear infinite; /* linear = constant speed */
 }
 
-/* The invisible jump back to the identical card: no animations at all */
-.card-track.jumping,
-.card-track.jumping .dish-card {
-  transition: none;
+/* Mouse over the carousel: pause, so a dish is easy to click */
+.marquee-viewport:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 /* One dish card: portrait, rounded, subtle border, raised dark background.
-   Cards that aren't in the center are smaller and faded. */
+   margin-right (instead of "gap") keeps both copies exactly the same width,
+   which the seamless loop needs. */
 .dish-card {
   display: flex;
-  flex: 0 0 var(--card-size);
+  flex: 0 0 340px;
   flex-direction: column;
   gap: 10px;
   aspect-ratio: 3 / 4; /* portrait */
+  margin-right: 24px;
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
@@ -1363,25 +1487,18 @@ textarea {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transform: scale(0.86);
-  opacity: 0.45;
   transition:
-    transform 0.7s ease,
-    opacity 0.7s ease,
-    border-color 0.3s,
-    box-shadow 0.7s;
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
-/* The card in the center: full size, full focus */
-.dish-card.active {
-  transform: scale(1);
-  opacity: 1;
+/* The card under the mouse lifts up a little */
+.dish-card:hover,
+.dish-card:focus-visible {
+  transform: translateY(-6px);
   border-color: rgba(217, 160, 102, 0.45); /* light brown */
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
-}
-
-.dish-card:not(.active):hover {
-  opacity: 0.7;
 }
 
 /* The photo fills the top of the card; the text sits below it */
@@ -1421,10 +1538,11 @@ textarea {
   text-align: center;
 }
 
-/* Phones: the center card takes more of the width, smaller text */
+/* Phones: smaller cards and text */
 @media (max-width: 500px) {
-  .card-carousel-viewport {
-    --card-size: 64cqi;
+  .dish-card {
+    flex-basis: 240px;
+    margin-right: 16px;
   }
 
   .dish-card-name {
@@ -1432,15 +1550,50 @@ textarea {
   }
 }
 
+/* People who turned off animations in their device settings:
+   no automatic movement; they can swipe/scroll the row instead */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-viewport {
+    overflow-x: auto;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+}
+
+
+
 /* Menu list */
 /* Full menu under the carousel: two columns, one on phones */
+/* Flexbox instead of a grid, so a shorter last row (e.g. 2 of 3 dishes)
+   sits in the MIDDLE instead of on the left */
 .menu-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   column-gap: 24px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* 3 dishes per row (each = a third of the width minus the 2 gaps) */
+.menu-list > li {
+  flex: 0 0 calc((100% - 2 * 24px) / 3);
+}
+
+/* Tablets: 2 per row. Phones: 1 per row. */
+@media (max-width: 900px) {
+  .menu-list > li {
+    flex-basis: calc((100% - 24px) / 2);
+  }
+}
+
+@media (max-width: 600px) {
+  .menu-list > li {
+    flex-basis: 100%;
+  }
 }
 
 /* Each dish is a button (clickable), styled to look like a menu row */
@@ -1563,15 +1716,96 @@ textarea {
   color: var(--color-muted);
 }
 
+/* ---------- Visit Us: map + info cards (Step 40) ---------- */
+
+/* Map on the left (wider), the 3 info cards stacked on the right */
+.location-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+}
+
+.location-layout .info-cards {
+  grid-template-columns: 1fr; /* one card per row next to the map */
+  gap: 16px;
+}
+
+.location-map {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  border: 0;
+  border-radius: 12px;
+  background-color: var(--color-surface); /* shown while the map loads */
+}
+
+/* "Get Directions" button under the address */
+.location-btn {
+  display: inline-block;
+  margin-top: 12px;
+  text-decoration: none;
+}
+
+/* Phone number and email: light brown, underlined on hover */
+.contact-link {
+  color: #d9a066;
+  text-decoration: none;
+}
+
+.contact-link:hover {
+  text-decoration: underline;
+}
+
+/* "Open now" / "Closed" pill with a small dot (set in OpenStatusBadge.jsx) */
+.open-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.open-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.open-badge.open {
+  background-color: rgba(46, 160, 67, 0.15);
+  color: #5fd47a;
+}
+
+.open-badge.closed {
+  background-color: rgba(220, 60, 60, 0.15);
+  color: #ff7b7b;
+}
+
+/* Tablets and phones: the map goes on top, the cards below it */
+@media (max-width: 800px) {
+  .location-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .location-map {
+    min-height: 280px;
+  }
+}
+
+
 /* ---------- Customer pages: My Reservations, My Profile (Step 33) ---------- */
 
 /* Page titles in brush lettering, like the home page */
 .page h1 {
   margin: 0 0 4px;
-  font-family: var(--font-brush);
-  font-size: 2.4rem;
-  font-weight: normal;
-  letter-spacing: 1px;
+  font-family: var(--font-logo); /* same font as the "POUND" logo */
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -1772,10 +2006,9 @@ a.btn {
 /* Page titles in brush lettering, like the website */
 .dashboard-content .page-header h1 {
   margin: 0 0 4px;
-  font-family: var(--font-brush);
-  font-size: 2.2rem;
-  font-weight: normal;
-  letter-spacing: 1px;
+  font-family: var(--font-logo); /* same font as the "POUND" logo */
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -1867,4 +2100,9 @@ a.btn {
   letter-spacing: 0;
   text-transform: none;
   color: var(--color-text);
+}
+
+/* Buttons placed directly in a pop-up (not inside a .form) need space above them */
+.modal > .form-actions {
+  margin-top: 20px;
 }

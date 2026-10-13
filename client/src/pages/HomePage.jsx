@@ -2,7 +2,7 @@
 // Each <section> has an id so the navbar can scroll to it (e.g. "/#menu").
 // Text (story, menu, address, hours) comes from config.js; photos from client/src/assets/.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
   BRAND_MAIN,
@@ -15,6 +15,7 @@ import {
   PHONE,
   CONTACT_EMAIL,
   OPENING_HOURS,
+  MAP_QUERY,
 } from "../config";
 import { getImage } from "../utils/images";
 import { formatPrice } from "../utils/formatPrice";
@@ -22,14 +23,24 @@ import BookingForm from "../components/BookingForm";
 import MenuCarousel from "../components/MenuCarousel";
 import MenuItemDetails from "../components/MenuItemDetails";
 import Photo from "../components/Photo";
+import OpenStatusBadge from "../components/OpenStatusBadge";
+import { useHomeAnimations } from "../hooks/useHomeAnimations";
 
 const heroImage = getImage("hero.jpg");
 const logoImage = getImage("logo.png");
+
+// Google Maps links (free, no account or API key needed)
+const mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(MAP_QUERY)}&output=embed`;
+const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(MAP_QUERY)}`;
 
 function HomePage() {
   const location = useLocation();
   // The dish shown in the details pop-up (null = pop-up closed)
   const [selectedItem, setSelectedItem] = useState(null);
+  
+  // GSAP animations (hero entrance, scroll reveal, parallax) for everything inside pageRef
+  const pageRef = useRef(null);
+  useHomeAnimations(pageRef);
 
   // Runs every time the URL changes.
   // If the URL has a #hash (e.g. "#menu"), scroll to the section with that id.
@@ -46,8 +57,9 @@ function HomePage() {
     }
   }, [location]);
 
-  return (
-    <>
+    return (
+    <div ref={pageRef}>
+
       {/* HERO: full-width food photo with the logo and tagline on top.
           The photo is a CSS background so the text can sit over it. It's passed
           to the CSS as the --hero-image variable; index.css adds the dark layer
@@ -58,6 +70,8 @@ function HomePage() {
         className="hero"
         style={heroImage ? { "--hero-image": `url(${heroImage})` } : undefined}
       >
+                {/* Separate photo layer, so GSAP can move it for the parallax effect */}
+        <div className="hero-bg" aria-hidden="true" />
         <div className="hero-content">
           {logoImage ? (
             <img src={logoImage} alt={`${BRAND_MAIN} ${BRAND_SUB}`} className="hero-logo" />
@@ -135,26 +149,52 @@ function HomePage() {
         </div>
       </section>
 
-      {/* LOCATION: address, opening hours, contact */}
+      {/* LOCATION: Google Map on the left; address, opening hours, contact on the right */}
       <section id="location" className="section">
         <h2 className="section-title">Visit Us</h2>
-        <div className="info-cards">
-          <div className="card">
-            <h3>Address</h3>
-            <p>{ADDRESS}</p>
-          </div>
-          <div className="card">
-            <h3>Opening Hours</h3>
-            <p>{OPENING_HOURS}</p>
-          </div>
-          <div className="card">
-            <h3>Contact</h3>
-            <p>{PHONE}</p>
-            <p>{CONTACT_EMAIL}</p>
+        <div className="location-layout">
+          {/* An embedded Google Map: a small window to Google Maps inside our page */}
+          <iframe
+            className="location-map"
+            title="Map showing the restaurant's location"
+            src={mapEmbedUrl}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+
+          <div className="info-cards">
+            <div className="card">
+              <h3>Address</h3>
+              <p>{ADDRESS}</p>
+              {/* Opens Google Maps in a new tab with directions to the restaurant */}
+              <a className="btn location-btn" href={directionsUrl} target="_blank" rel="noopener noreferrer">
+                Get Directions ↗
+              </a>
+            </div>
+            <div className="card">
+              <h3>Opening Hours</h3>
+              <p>{OPENING_HOURS}</p>
+              <OpenStatusBadge />
+            </div>
+            <div className="card">
+              <h3>Contact</h3>
+              {/* tel: opens the phone app (call), mailto: opens the email app */}
+              <p>
+                <a className="contact-link" href={`tel:${PHONE.replace(/\s/g, "")}`}>
+                  {PHONE}
+                </a>
+              </p>
+              <p>
+                <a className="contact-link" href={`mailto:${CONTACT_EMAIL}`}>
+                  {CONTACT_EMAIL}
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
