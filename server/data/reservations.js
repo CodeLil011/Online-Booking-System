@@ -56,7 +56,7 @@ const bookings = [
   { _id: "r4", ...account("u4"), table: "t6", date: day(-37), time: "19:00", guests: 3, status: "Completed" },
   { _id: "r5", ...account("u8"), table: "t9", date: day(-35), time: "17:00", guests: 6, specialRequest: "Team dinner", status: "Completed" },
   { _id: "r6", ...walkIn("Juan Dela Cruz", "juan.delacruz@yahoo.com", "09281234567"), table: "t3", date: day(-33), time: "13:00", guests: 2, status: "Completed" },
-  { _id: "r7", ...account("u7"), table: "t7", date: day(-31), time: "19:00", guests: 4, status: "Completed" },
+  { _id: "r7", ...account("u10"), table: "t7", date: day(-31), time: "19:00", guests: 4, status: "Completed" },
   { _id: "r8", ...account("u9"), table: "t12", date: day(-30), time: "17:00", guests: 9, specialRequest: "Family reunion, please prepare a high chair", status: "Completed" },
   { _id: "r9", ...account("u3"), table: "t3", date: day(-28), time: "17:00", guests: 2, status: "Completed" },
   { _id: "r10", ...account("u10"), table: "t8", date: day(-27), time: "13:00", guests: 4, status: "Completed" },
@@ -66,7 +66,7 @@ const bookings = [
   { _id: "r14", ...account("u13"), table: "t6", date: day(-21), time: "15:00", guests: 4, status: "Completed" },
   { _id: "r15", ...account("u6"), table: "t2", date: day(-20), time: "19:00", guests: 2, status: "Completed" },
   { _id: "r16", ...walkIn("Ramon Bautista", "ramon.bautista@gmail.com", "09391234567"), table: "t9", date: day(-19), time: "19:00", guests: 5, status: "Completed" },
-  { _id: "r17", ...account("u7"), table: "t4", date: day(-17), time: "13:00", guests: 2, status: "Completed" },
+  { _id: "r17", ...account("u12"), table: "t4", date: day(-17), time: "13:00", guests: 2, status: "Completed" },
   { _id: "r18", ...account("u8"), table: "t7", date: day(-16), time: "17:00", guests: 4, status: "Completed" },
   { _id: "r19", ...account("u3"), table: "t10", date: day(-14), time: "19:00", guests: 6, specialRequest: "Family dinner", status: "Completed" },
   { _id: "r20", ...account("u9"), table: "t1", date: day(-12), time: "11:00", guests: 1, status: "Completed" },
@@ -80,7 +80,7 @@ const bookings = [
   // ===== CANCELLED (5) =====
   { _id: "r27", ...account("u4"), table: "t6", date: day(-36), time: "19:00", guests: 4, status: "Cancelled", cancelledBy: "customer", cancellationReason: "Schedule conflict" },
   { _id: "r28", ...walkIn("Mark Lim", "mark.lim@gmail.com", "09221234567"), table: "t10", date: day(-25), time: "19:00", guests: 6, status: "Cancelled", cancelledBy: "staff", cancellationReason: "Fully booked for a private event", ...archivedBy("u2", 20) },
-  { _id: "r29", ...account("u7"), table: "t2", date: day(-15), time: "17:00", guests: 2, status: "Cancelled", cancelledBy: "customer", cancellationReason: "Change of plans" },
+  { _id: "r29", ...account("u11"), table: "t2", date: day(-15), time: "17:00", guests: 2, status: "Cancelled", cancelledBy: "customer", cancellationReason: "Change of plans" },
   { _id: "r30", ...walkIn("Ben Torres", "ben.torres@yahoo.com", "09331234567"), table: "t7", date: day(-8), time: "19:00", guests: 4, status: "Cancelled", cancelledBy: "staff", cancellationReason: "Customer did not arrive (no-show)" },
   { _id: "r31", ...account("u8"), table: "t5", date: day(-4), time: "19:00", guests: 4, status: "Cancelled", cancelledBy: "customer", cancellationReason: "Not feeling well" },
 

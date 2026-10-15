@@ -1,6 +1,6 @@
 // data/users.js
 // SAMPLE users. Used ONLY by seed.js (npm run seed) to fill MongoDB.
-// 13 users: 1 admin, 2 staff, 10 customers (1 of them deactivated).
+// 12 users: 1 admin, 2 staff, 9 customers (1 of them deactivated).
 //
 // Passwords are NEVER stored as plain text. bcrypt.hashSync() turns each
 // demo password into a hash when this file loads.
@@ -27,9 +27,9 @@ const users = [
   // ----- Admin -----
   {
     _id: "u1",
-    fullName: "Andrea Villanueva",
-    email: "andrea.villanueva@gmail.com",
-    phone: "09171112222",
+    fullName: "Giuz Montaño",
+    email: "giuz.montano@gmail.com",
+    phone: "09285550202",
     passwordHash: ADMIN_HASH,
     role: "admin",
     status: "active",
@@ -81,23 +81,13 @@ const users = [
   },
   {
     _id: "u6",
-    fullName: "Kclei Comuelo",
-    email: "kclei.comuelo@gmail.com",
+    fullName: "Kclei Umadhay",
+    email: "kclei.umadhay@gmail.com",
     phone: "09175550101",
     passwordHash: CUSTOMER_HASH,
     role: "customer",
     status: "active",
     createdAt: joinedDaysAgo(55),
-  },
-  {
-    _id: "u7",
-    fullName: "Giuz Montaño",
-    email: "giuz.montano@gmail.com",
-    phone: "09285550202",
-    passwordHash: CUSTOMER_HASH,
-    role: "customer",
-    status: "active",
-    createdAt: joinedDaysAgo(54),
   },
   {
     _id: "u8",

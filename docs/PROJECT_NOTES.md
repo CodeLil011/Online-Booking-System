@@ -651,7 +651,7 @@ Staff never click anything to mark a table "booked". The button is for out-of-se
 **Development test accounts**
 | Name | Role | Email | Password | Status |
 |---|---|---|---|---|
-| Andrea Villanueva | admin | andrea.villanueva@gmail.com | Admin@123 | active |
+| Giuz Montaño | admin | giuz.montano@gmail.com | Admin@123 | active |
 | Marco Delos Reyes | staff | marco.delosreyes@gmail.com | Staff@123 | active |
 | Maria Santos | customer | maria.santos@gmail.com | Customer@123 | active |
 | Paolo Garcia | customer | paolo.garcia@outlook.com | Customer@123 | inactive |
@@ -1345,12 +1345,12 @@ MongoDB words used: `$gte` (≥), `$ne` (not equal), `$gt` (>), `$or` (either co
 ### STEP 43: Realistic sample data (Phase 11)
 **Goal:** meet the requirements **"at least 10 realistic users"** and **"at least 20 completed transactions"**, and make every page look lived-in for the demo.
 
-**Users (13)** in `server/data/users.js`:
+**Users (12)** in `server/data/users.js` (the admin was changed from Andrea Villanueva to **Giuz Montaño**, who is no longer a customer):
 | Role | People | Password |
 |---|---|---|
-| Admin | Andrea Villanueva | `Admin@123` |
+| Admin | Giuz Montaño | `Admin@123` |
 | Staff | Marco Delos Reyes, Rene Baterbonia | `Staff@123` |
-| Customers | Maria Santos, Paolo Garcia (**inactive**), Kclei Comuelo, Giuz Montaño, Khalil Espiritu, Al-vi Ebdane, Giian Medina, Syd Villanueva, Carlo Valino, Jhoshua Gacud | `Customer@123` |
+| Customers | Maria Santos, Paolo Garcia (**inactive**), Kclei Comuelo, Khalil Espiritu, Al-vi Ebdane, Giian Medina, Syd Villanueva, Carlo Valino, Jhoshua Gacud | `Customer@123` |
 
 Emails follow `firstname.surname@gmail.com` (some yahoo/outlook), e.g. `giuz.montano@gmail.com`, `alvi.ebdane@gmail.com`.
 
@@ -1369,7 +1369,7 @@ Emails follow `firstname.surname@gmail.com` (some yahoo/outlook), e.g. `giuz.mon
 
 **`seed.js` now checks the data first** (`checkSampleData()`), with the same rules as the real system: the table exists, the party fits it, no table used twice in the same slot (cancelled ones don't count), no upcoming booking on an out-of-service table, account bookings belong to a customer, and no customer holds 2 active bookings in one slot. **If anything is wrong it stops before deleting anything.** After seeding it prints a summary (users by role, reservations by status, archived count).
 
-**Tested on a temporary database:** 13 users (1/2/10), 37 visible + 3 archived reservations, 24 visible Completed, 2 today, 4 Pending, Maria's stats (3 completed, last visit 14 days ago), the conflict check still blocks double booking, and a deliberately broken data file was refused.
+**Tested on a temporary database:** 12 users (1/2/9), 37 visible + 3 archived reservations, 24 visible Completed, 2 today, 4 Pending, Maria's stats (3 completed, last visit 14 days ago), the conflict check still blocks double booking, and a deliberately broken data file was refused.
 
 ---
 
