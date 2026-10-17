@@ -19,7 +19,8 @@ function Sidebar() {
     <aside className="sidebar">
       <Link to="/dashboard" className="sidebar-brand">
         {BRAND_MAIN}
-        <span>Staff Dashboard</span>
+        {/* The label matches the role: Admin Dashboard or Staff Dashboard */}
+        <span>{user.role === "admin" ? "Admin Dashboard" : "Staff Dashboard"}</span>
       </Link>
 
       {/* NavLink adds class="active" to the link of the current page */}
